@@ -21,3 +21,5 @@ The SDK currently includes:
 - real `.env`-based test scripts
 
 Start with [Getting started](./getting-started.md).
+
+The project is intentionally small and practical today: it focuses on a clean core, a predictable module layout, and a workable developer flow before covering every advanced API edge case.

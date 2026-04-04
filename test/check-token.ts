@@ -1,12 +1,13 @@
 import { config as loadEnv } from "dotenv";
 import { Bot } from "../src";
+import { t } from "../src/i18n/runtime";
 
 async function main() {
   loadEnv();
 
   const token = process.env.ZALO_BOT_TOKEN;
   if (!token) {
-    throw new Error("Missing ZALO_BOT_TOKEN in .env");
+    throw new Error(t("env.missingToken"));
   }
 
   const bot = new Bot({ token });
@@ -15,18 +16,18 @@ async function main() {
     await bot.initialize();
     const me = await bot.getMe();
 
-    console.log("Token is valid.");
-    console.log(`Bot ID: ${me.id}`);
-    console.log(`Display name: ${me.displayName ?? "(unknown)"}`);
-    console.log(`Account name: ${me.accountName ?? "(unknown)"}`);
-    console.log(`Account type: ${me.accountType ?? "(unknown)"}`);
+    console.log(t("test.tokenValid"));
+    console.log(t("test.botId", { value: me.id }));
+    console.log(t("test.displayName", { value: me.displayName ?? t("test.unknown") }));
+    console.log(t("test.accountName", { value: me.accountName ?? t("test.unknown") }));
+    console.log(t("test.accountType", { value: me.accountType ?? t("test.unknown") }));
   } finally {
     await bot.shutdown();
   }
 }
 
 void main().catch((error) => {
-  console.error("Token check failed.");
+  console.error(t("test.tokenCheckFailed"));
   console.error(error);
   process.exitCode = 1;
 });

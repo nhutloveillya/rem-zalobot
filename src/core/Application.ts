@@ -1,6 +1,7 @@
 import { DEFAULT_POLL_TIMEOUT_SECONDS, DEFAULT_RETRY_DELAY_MS } from "../constants";
 import { TimedOut } from "../errors";
 import type { Handler } from "../handlers/BaseHandler";
+import { t } from "../i18n/runtime";
 import type { Update } from "../models/Update";
 import type { Bot } from "./Bot";
 
@@ -46,7 +47,7 @@ export class Application {
         } catch (error) {
           // Long polling timeouts are expected when there are no updates.
           if (!(error instanceof TimedOut)) {
-            console.error("Error while fetching updates:", error);
+            console.error(t("app.pollingFetchError"), error);
           }
         }
 

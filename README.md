@@ -1,18 +1,19 @@
 # zalo-bot-js
 
-SDK TypeScript cho Zalo Bot API, hướng đến người dùng Việt Nam nhưng vẫn có tài liệu tiếng Anh rõ ràng cho cộng đồng quốc tế.
+Thư viện TypeScript cho Zalo Bot API, tập trung vào trải nghiệm phát triển rõ ràng với Node.js, cấu trúc module gọn, và tài liệu song ngữ Việt/Anh.
 
 [Tài liệu tiếng Việt](docs/vi/index.md) | [English docs](docs/en/index.md)
 
-## Giới thiệu nhanh
+## Tổng quan
 
-`zalo-bot-js` là một thư viện Node.js + TypeScript được port từ package tham chiếu `python_zalo_bot`, nhưng được tổ chức lại theo phong cách TypeScript-native:
+`zalo-bot-js` được xây dựng từ package tham chiếu `python_zalo_bot`, nhưng được tổ chức lại theo hướng TypeScript-native thay vì port máy móc. Mục tiêu của project là cung cấp một nền tảng đơn giản để:
 
-- dễ khởi tạo bot bằng token
-- có long polling và webhook helper
-- có `CommandHandler`, `MessageHandler`, `filters`
-- có script test token và bot thử từ `.env`
-- có cấu trúc module rõ ràng để tiếp tục mở rộng
+- khởi tạo bot bằng token
+- nhận update bằng long polling
+- tổ chức command/message handlers rõ ràng
+- hỗ trợ webhook helper cơ bản
+- kiểm tra bot thật bằng `.env`
+- mở rộng dần thành SDK đầy đủ hơn
 
 ## Tính năng hiện có
 
@@ -23,16 +24,18 @@ SDK TypeScript cho Zalo Bot API, hướng đến người dùng Việt Nam nhưn
 - routing theo command và filter
 - fallback parse cho payload phản hồi mỏng từ API
 
-## Chưa hỗ trợ đầy đủ
+## Trạng thái hiện tại
 
-- upload media multipart hoàn chỉnh
-- worker queue / updater layer như các framework bot lớn
-- webhook adapter framework-specific trong core SDK
-- bộ test tự động đầy đủ cho mọi endpoint
+Project đang ở giai đoạn usable cho các flow cơ bản, nhưng chưa phải một SDK hoàn chỉnh cho mọi trường hợp của Zalo Bot API. Những phần còn đang giới hạn:
+
+- upload media multipart đầy đủ
+- worker queue hoặc updater layer nâng cao
+- adapter webhook tách riêng cho từng framework
+- bộ test tự động sâu cho toàn bộ endpoint
 
 ## Quick start
 
-### 1. Cài dependencies
+### 1. Cài đặt dependencies
 
 ```bash
 npm install
@@ -44,7 +47,10 @@ Tạo `.env` từ `.env.example`:
 
 ```env
 ZALO_BOT_TOKEN=your_zalo_bot_token_here
+ZALO_BOT_LANG=vi
 ```
+
+`ZALO_BOT_LANG` hỗ trợ `vi` hoặc `en`. Nếu không cấu hình, project mặc định dùng tiếng Việt cho log runtime.
 
 ### 3. Kiểm tra token
 
@@ -87,13 +93,14 @@ app.addHandler(
 void app.runPolling();
 ```
 
-## Kiến trúc hiện tại
+## Cấu trúc mã nguồn
 
 - `src/request`: HTTP transport và API error mapping
 - `src/models`: `User`, `Chat`, `Message`, `Update`, `WebhookInfo`
 - `src/core`: `Bot`, `Application`, `ApplicationBuilder`, `CallbackContext`
 - `src/handlers`: command và message handlers
 - `src/filters`: composable filters
+- `src/i18n`: runtime messages và helper đổi ngôn ngữ log theo `ZALO_BOT_LANG`
 - `examples`: ví dụ polling và webhook
 - `test`: script thử token và bot thật bằng `.env`
 
@@ -101,9 +108,9 @@ void app.runPolling();
 
 - Tiếng Việt: [docs/vi/index.md](docs/vi/index.md)
 - English: [docs/en/index.md](docs/en/index.md)
-- GitHub Pages docs sẽ được build từ thư mục `docs/`
+- GitHub Pages: build từ thư mục `docs/` bằng VitePress
 
-## Development
+## Scripts
 
 - `npm run build`: build thư viện TypeScript
 - `npm run check`: type-check không emit
@@ -114,6 +121,13 @@ void app.runPolling();
 - `npm run docs:preview`: preview docs đã build
 - `npm test`: chạy check, build và smoke test
 
+## Hướng phát triển tiếp theo
+
+- hoàn thiện message/media payload handling
+- mở rộng webhook integration thực dụng hơn
+- chuẩn hóa thêm lỗi runtime và instrumentation
+- tăng độ phủ tài liệu và test tự động
+
 ## English summary
 
-`zalo-bot-js` is a TypeScript-first SDK for the Zalo Bot API. It currently supports token validation, long polling, webhook helpers, command/message handlers, and simple `.env`-based test scripts. For full documentation, see [English docs](docs/en/index.md).
+`zalo-bot-js` is a TypeScript SDK for the Zalo Bot API with a practical core: token validation, long polling, webhook helpers, handlers, filters, env-driven test scripts, and bilingual documentation. See [English docs](docs/en/index.md) for full usage and architecture notes.

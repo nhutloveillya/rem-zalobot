@@ -10,6 +10,7 @@ export {
   TimedOut,
   ZaloError,
 } from "./errors";
+export { getLanguage, t } from "./i18n/runtime";
 export { Bot } from "./core/Bot";
 export { Application } from "./core/Application";
 export { ApplicationBuilder } from "./core/ApplicationBuilder";
@@ -24,6 +25,7 @@ export { User } from "./models/User";
 export { WebhookInfo } from "./models/WebhookInfo";
 export { BaseRequest } from "./request/BaseRequest";
 export { FetchRequest } from "./request/FetchRequest";
+export type { MessageKey, SupportedLanguage } from "./i18n/messages";
 export type { BotConfig } from "./core/Bot";
 export type { PollingOptions } from "./core/Application";
 export type { Filter } from "./filters";

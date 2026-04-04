@@ -1,5 +1,6 @@
 import { BASE_URL } from "../constants";
 import { InvalidToken } from "../errors";
+import { t } from "../i18n/runtime";
 import { Chat } from "../models/Chat";
 import { Message } from "../models/Message";
 import { Update } from "../models/Update";
@@ -24,9 +25,7 @@ export class Bot {
 
   constructor(private readonly config: BotConfig) {
     if (!config.token) {
-      throw new InvalidToken(
-        "You must pass the token you received from https://bot.zapps.vn/docs/create-bot/",
-      );
+      throw new InvalidToken(t("error.invalidTokenInput"));
     }
 
     const rootUrl = config.baseUrl ?? BASE_URL;
@@ -48,7 +47,7 @@ export class Bot {
       await this.getMe();
     } catch (error) {
       if (error instanceof InvalidToken) {
-        throw new InvalidToken(`The token \`${this.config.token}\` was rejected by the server.`);
+        throw new InvalidToken(t("error.rejectedToken", { token: this.config.token }));
       }
       throw error;
     }
@@ -70,7 +69,7 @@ export class Bot {
     const user = User.fromApi(asJsonObject(result));
 
     if (!user) {
-      throw new InvalidToken("Bot API returned an invalid getMe payload.");
+      throw new InvalidToken(t("error.invalidGetMePayload"));
     }
 
     this.botUser = user;
@@ -193,7 +192,7 @@ export class Bot {
   private buildMessageFallback(data: RequestPayload, result?: JsonObject): Message {
     const chatId = typeof data.chat_id === "string" ? data.chat_id : undefined;
     if (!chatId) {
-      throw new Error("Bot API returned an invalid message payload without chat_id context.");
+      throw new Error(t("error.invalidMessageWithoutChatContext"));
     }
 
     const messageIdValue = result?.message_id;

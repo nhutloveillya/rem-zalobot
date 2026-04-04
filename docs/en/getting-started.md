@@ -17,7 +17,15 @@ Create a `.env` file in the project root:
 
 ```env
 ZALO_BOT_TOKEN=your_zalo_bot_token_here
+ZALO_BOT_LANG=vi
 ```
+
+`ZALO_BOT_LANG` supports:
+
+- `vi`: runtime logs and helper messages in Vietnamese
+- `en`: runtime logs and helper messages in English
+
+If unset, the current default is `vi`.
 
 ## Verify the token
 
@@ -25,7 +33,13 @@ ZALO_BOT_TOKEN=your_zalo_bot_token_here
 npm run test:token
 ```
 
-This script loads `.env`, calls `getMe()`, and prints the bot profile.
+This script:
+
+- loads `.env`
+- reads `ZALO_BOT_TOKEN`
+- creates `Bot`
+- calls `getMe()`
+- prints the bot profile in the selected runtime language
 
 ## Run the hello bot
 
@@ -39,6 +53,14 @@ Then send:
 - `hello`
 
 to validate the basic message flow.
+
+This test script uses:
+
+- `ApplicationBuilder`
+- `CommandHandler("start", ...)`
+- `MessageHandler(...)`
+
+It is the fastest way to confirm polling, update parsing, handler matching, and message replies.
 
 ## Minimal startup example
 
@@ -55,3 +77,8 @@ app.addHandler(new CommandHandler("start", async (update) => {
 
 void app.runPolling();
 ```
+
+## When to use each test script
+
+- `test:token`: validate token and bot identity only
+- `test:hello-bot`: validate token, polling, handlers, and reply flow together
