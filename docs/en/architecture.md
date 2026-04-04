@@ -14,15 +14,15 @@ The SDK is currently organized into clear layers:
 ## Runtime flow
 
 ```mermaid
-flowchart TD
-    AppCode[AppCode] --> ApplicationBuilder
-    ApplicationBuilder --> Application
-    Application --> Bot
-    Bot --> RequestLayer
-    RequestLayer --> ZaloBotApi
-    ZaloBotApi --> UpdateModel
-    UpdateModel --> HandlerLayer
-    HandlerLayer --> UserCallback
+flowchart LR
+    A["App code"] --> B["ApplicationBuilder"]
+    B --> C["Application"]
+    C --> D["Bot"]
+    D --> E["Request layer"]
+    E --> F["Zalo Bot API"]
+    F --> G["Update model"]
+    G --> H["Handler layer"]
+    H --> I["Your callback"]
 ```
 
 ## Porting direction

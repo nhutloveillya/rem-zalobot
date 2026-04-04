@@ -14,15 +14,15 @@ SDK hiện tại được chia theo các lớp rõ ràng:
 ## Luồng chạy cơ bản
 
 ```mermaid
-flowchart TD
-    AppCode[AppCode] --> ApplicationBuilder
-    ApplicationBuilder --> Application
-    Application --> Bot
-    Bot --> RequestLayer
-    RequestLayer --> ZaloBotApi
-    ZaloBotApi --> UpdateModel
-    UpdateModel --> HandlerLayer
-    HandlerLayer --> UserCallback
+flowchart LR
+    A["Mã ứng dụng"] --> B["ApplicationBuilder"]
+    B --> C["Application"]
+    C --> D["Bot"]
+    D --> E["Lớp request"]
+    E --> F["Zalo Bot API"]
+    F --> G["Update model"]
+    G --> H["Handler layer"]
+    H --> I["Callback của bạn"]
 ```
 
 ## Mapping từ Python sang TypeScript
