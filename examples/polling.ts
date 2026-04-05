@@ -13,6 +13,11 @@ async function main() {
   });
 
   bot.on("text", async (message) => {
+    if (message.text === "hello") {
+      await bot.sendMessage(message.chat.id, "Xin chao! Toi da nhan duoc loi chao cua ban.");
+      return;
+    }
+
     if (message.text && !message.text.startsWith("/")) {
       await bot.sendMessage(message.chat.id, `Ban vua noi: ${message.text}`);
     }
@@ -23,6 +28,17 @@ async function main() {
     await bot.sendMessage(
       message.chat.id,
       payload ? `Chao ${payload}! Toi la bot Zalo viet bang TypeScript.` : "Chao ban!",
+    );
+  });
+
+  bot.onText(/\/ping/, async (message) => {
+    await bot.sendMessage(message.chat.id, "pong");
+  });
+
+  bot.onText(/\/help/, async (message) => {
+    await bot.sendMessage(
+      message.chat.id,
+      "Thu lenh nay:\n/start\n/ping\n/help\nHoac gui hello de test text handler.",
     );
   });
 

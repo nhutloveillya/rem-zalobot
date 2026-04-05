@@ -2,20 +2,37 @@
 
 ![zalo-bot-js](image/zalo-bot-js.png)
 
-TypeScript SDK for the Zalo Bot API with a practical node-style API: events, regex text handlers, long polling, webhook helpers, and CommonJS-friendly usage.
+`zalo-bot-js` is a TypeScript SDK for the Zalo Bot API, designed for Node.js developers who want a practical bot runtime with polling, webhook handling, event listeners, message sending APIs, and a TypeScript-friendly structure.
 
-[Docs public](https://kaiyodev.github.io/zalo-bot-js) | [Tiếng Việt](docs/vi/index.md) | [English docs](docs/en/index.md)
+[Docs public](https://kaiyodev.github.io/zalo-bot-js) | [Tiếng Việt](https://kaiyodev.github.io/zalo-bot-js/vi/) | [English docs](https://kaiyodev.github.io/zalo-bot-js/en/)
 
-## Features
+## What You Get
 
-- `new Bot(token, { polling: true })` or `new Bot({ token, polling: true })`
-- `bot.on("message" | "text" | "photo" | "sticker" | "command", callback)`
-- `bot.onText(regexp, callback)` for regex-based text handlers
-- `bot.startPolling()`, `bot.stopPolling()`, `bot.isPolling()`
-- `bot.processUpdate(update)` for webhook flows
-- `bot.sendMessage()`, `bot.sendPhoto()`, `bot.sendSticker()`, `bot.sendChatAction()`
-- `bot.setWebHook()`, `bot.deleteWebHook()`, `bot.getWebHookInfo()`
-- `bot.getMe()` and `bot.getUpdates()`
+- A `Bot` client for the Zalo Bot API
+- Event-based message handling with `on()` and `onText()`
+- Built-in polling runtime with `startPolling()`
+- Webhook integration through `processUpdate()` and `setWebhook()`
+- Message sending APIs such as `sendMessage()`, `sendPhoto()`, `sendSticker()`, and `sendChatAction()`
+- Handler-based APIs with `Application`, `ApplicationBuilder`, `CommandHandler`, `MessageHandler`, and `filters`
+
+## Who This Is For
+
+This SDK is for developers who want to:
+
+- build a Zalo bot in Node.js or TypeScript
+- start quickly with polling before moving to webhook
+- organize bot logic with either event listeners or handler-based APIs
+- integrate bot flows with internal services, workflow engines, or external systems
+
+## Documentation Path
+
+If you are new to the project, the recommended reading order is:
+
+1. [Getting started](https://kaiyodev.github.io/zalo-bot-js/vi/getting-started) to install dependencies, configure `.env`, and run the first bot flow
+2. [API Reference](https://kaiyodev.github.io/zalo-bot-js/vi/api-reference) to navigate each method and helper page
+3. [Examples and tests](https://kaiyodev.github.io/zalo-bot-js/vi/examples) to choose between polling, webhook, and local verification scripts
+4. [Architecture](https://kaiyodev.github.io/zalo-bot-js/vi/architecture) to understand the SDK layers
+5. [n8n integration](https://kaiyodev.github.io/zalo-bot-js/vi/n8n) if you want to connect the bot to automation workflows
 
 ## Installation
 
@@ -34,129 +51,156 @@ ZALO_BOT_LANG=vi
 
 ## Quick Start
 
-### CommonJS
-
-```js
-const { ZaloBot } = require("zalo-bot-js");
-require("dotenv").config();
-
-const bot = new ZaloBot(process.env.ZALO_BOT_TOKEN, {
-  polling: true,
-});
-
-bot.on("message", async (msg) => {
-  console.log("Received message:", msg.text ?? msg.messageId);
-});
-
-bot.onText(/\/start (.+)/, async (msg, match) => {
-  await bot.sendMessage(msg.chat.id, `Ban vua gui: ${match[1]}`);
-});
-```
-
-### TypeScript / ESM-style import
-
 ```ts
 import "dotenv/config";
 import { Bot } from "zalo-bot-js";
 
-const bot = new Bot(process.env.ZALO_BOT_TOKEN!, {
-  polling: true,
-});
+const bot = new Bot({ token: process.env.ZALO_BOT_TOKEN! });
 
-bot.on("text", async (msg) => {
-  if (msg.text && !msg.text.startsWith("/")) {
-    await bot.sendMessage(msg.chat.id, `Ban vua noi: ${msg.text}`);
+bot.on("text", async (message) => {
+  if (message.text && !message.text.startsWith("/")) {
+    await bot.sendMessage(message.chat.id, `Ban vua noi: ${message.text}`);
   }
 });
 
-bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
+bot.onText(/\/start(?:\s+(.+))?/, async (message, match) => {
   const payload = match[1]?.trim() ?? "ban";
-  await bot.sendMessage(msg.chat.id, `Xin chao ${payload}!`);
+  await bot.sendMessage(message.chat.id, `Xin chao ${payload}!`);
 });
+
+void bot.startPolling();
 ```
 
-## Webhook Example
+This is the fastest path to a working bot:
 
-```ts
-import "dotenv/config";
-import express from "express";
-import { Bot } from "zalo-bot-js";
+- create a bot and get its token
+- create `.env`
+- verify the token
+- run polling
+- respond to text or commands
 
-const app = express();
-const secretToken = process.env.ZALO_WEBHOOK_SECRET!;
-const bot = new Bot(process.env.ZALO_BOT_TOKEN!, {
-  polling: false,
-});
+Detailed guide: [Getting started](https://kaiyodev.github.io/zalo-bot-js/vi/getting-started)
 
-app.use(express.json());
+## Main API Surface
 
-bot.on("message", async (msg) => {
-  await bot.sendMessage(msg.chat.id, "Xin chao!");
-});
+### Bot lifecycle and identity
 
-app.post("/webhook", async (req, res) => {
-  if (req.headers["x-bot-api-secret-token"] !== secretToken) {
-    res.status(403).json({ message: "Unauthorized" });
-    return;
-  }
+- `initialize()`
+- `shutdown()`
+- `cachedUser`
+- `getMe()`
 
-  await bot.processUpdate(req.body);
-  res.sendStatus(200);
-});
+### Updates and runtime
 
-await bot.setWebHook(process.env.ZALO_WEBHOOK_URL!, {
-  secret_token: secretToken,
-});
-```
-
-## Available API
-
-### Events
-
-- `bot.on(event, callback)`
-- `bot.onText(regexp, callback)`
-
-Supported event names today:
-
-- `message`
-- `text`
-- `photo`
-- `sticker`
-- `command`
+- `getUpdate()`
+- `getUpdates()`
+- `processUpdate()`
+- `startPolling()`
+- `stopPolling()`
+- `isPolling()`
 
 ### Sending
 
-- `bot.sendMessage(chatId, text, [options])`
-- `bot.sendPhoto(chatId, caption, photo, [options])`
-- `bot.sendSticker(chatId, sticker, [options])`
-- `bot.sendChatAction(chatId, action, [options])`
+- `sendMessage()`
+- `sendPhoto()`
+- `sendSticker()`
+- `sendChatAction()`
 
-### Polling and Webhook
+### Webhook
 
-- `bot.startPolling([options])`
-- `bot.stopPolling()`
-- `bot.isPolling()`
-- `bot.processUpdate(update)`
-- `bot.setWebHook(url, [options])`
-- `bot.deleteWebHook()`
-- `bot.getWebHookInfo()`
+- `setWebhook()`
+- `deleteWebhook()`
+- `getWebhookInfo()`
 
-### Bot Information
+### Event listeners
 
-- `bot.getMe([options])`
-- `bot.getUpdates([options])`
+- `on("message" | "text" | "photo" | "sticker" | "command", callback)`
+- `onText(regexp, callback)`
+
+### Message helpers
+
+- `message.replyText()`
+- `message.replyPhoto()`
+- `message.replySticker()`
+- `message.replyAction()`
+
+### Handler-based API
+
+- `ApplicationBuilder`
+- `Application`
+- `CommandHandler`
+- `MessageHandler`
+- `filters`
+- `CallbackContext`
+
+## Event Shape In This SDK
+
+This project does not expose raw Bot API payloads as the main developer interface. Event callbacks receive SDK models such as `Message` and `Update` metadata.
+
+Example:
+
+```ts
+import { Bot } from "zalo-bot-js";
+
+bot.on("message", async (message, metadata) => {
+  console.log("[message]", {
+    updateId: metadata.update.updateId,
+    chatId: message.chat.id,
+    messageId: message.messageId,
+    fromUserId: message.fromUser?.id,
+    messageType: message.messageType,
+    eventTypes: metadata.update.eventTypes,
+    text: message.text ?? null,
+    sticker: message.sticker ?? null,
+    photoUrl: message.photoUrl ?? null,
+  });
+});
+
+bot.on("text", async (message) => {
+  console.log("[text]", {
+    chatId: message.chat.id,
+    text: message.text,
+  });
+});
+
+bot.onText(/.*/, async (message, match) => {
+  console.log("[onText]", {
+    chatId: message.chat.id,
+    match: match[0],
+  });
+});
+```
+
+## Webhook Flow
+
+For production-style deployments, the webhook flow is:
+
+1. register the webhook with `setWebhook()`
+2. expose a public HTTP endpoint
+3. validate the webhook secret header
+4. pass the request body to `processUpdate()`
+5. handle the resulting SDK events
+
+See:
+
+- [setWebhook](https://kaiyodev.github.io/zalo-bot-js/vi/set-webhook)
+- [processUpdate](https://kaiyodev.github.io/zalo-bot-js/vi/process-update)
+- [Examples and tests](https://kaiyodev.github.io/zalo-bot-js/vi/examples)
 
 ## Project Structure
 
-- `src/request`: transport and API error mapping
-- `src/models`: `User`, `Chat`, `Message`, `Update`, `WebhookInfo`
+- `src/request`: HTTP transport and API error mapping
+- `src/models`: parsed models such as `User`, `Chat`, `Message`, `Update`, `WebhookInfo`
 - `src/core`: `Bot`, `Application`, `ApplicationBuilder`, `CallbackContext`
-- `src/handlers`: legacy handler-based API
+- `src/handlers`: handler-based APIs such as `CommandHandler` and `MessageHandler`
 - `src/filters`: composable filters
 - `examples`: example integrations
-- `test`: local scripts and focused verification
+- `test`: local verification scripts
+- `docs`: VitePress documentation site
 
-## Development
+## Local Development
+
+Core commands:
 
 ```bash
 npm run check
@@ -164,19 +208,32 @@ npm run build
 npm test
 ```
 
-Useful local scripts:
+Useful scripts:
 
 - `npm run test:token`
 - `npm run test:hello-bot`
 - `npm run test:event-debug`
 - `npm run test:bot-api`
+- `npm run docs:dev`
+- `npm run docs:build`
 
-## Notes
+## Current Scope
 
-- The SDK currently focuses on the practical bot core first.
-- Multipart media upload is still incomplete.
-- Sending multiple images in a single native album-style Zalo message is not implemented.
-- `Application` and handler/filter APIs are still exported for backward compatibility.
+The SDK currently focuses on the practical bot core and the most common message flows first.
+
+Current limitations:
+
+- multipart media upload is still incomplete
+- sending multiple images in a single native album-style Zalo message is not implemented
+- framework-specific webhook adapters are not split into separate packages
+
+## Read Next
+
+- [Getting started](https://kaiyodev.github.io/zalo-bot-js/vi/getting-started)
+- [API Reference](https://kaiyodev.github.io/zalo-bot-js/vi/api-reference)
+- [sendMessage](https://kaiyodev.github.io/zalo-bot-js/vi/send-message)
+- [Examples and tests](https://kaiyodev.github.io/zalo-bot-js/vi/examples)
+- [Architecture](https://kaiyodev.github.io/zalo-bot-js/vi/architecture)
 
 ## License
 

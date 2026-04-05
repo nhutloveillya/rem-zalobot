@@ -1,9 +1,28 @@
 # Getting started
 
+This page walks you through environment setup, bot token configuration, and the first basic flows with `zalo-bot-js`.
+
+If you are new to the SDK, follow this order: create the bot, install dependencies, create `.env`, verify the token, and then run the polling bot.
+
 ## Requirements
 
 - Node.js 18 or newer
 - a valid Zalo Bot token
+
+## Create the bot and get the token
+
+Before running the examples in this documentation, create a bot in the bot management portal and copy the token for your environment.
+
+Recommended flow:
+
+1. Open the bot management page by scanning the QR code below.
+2. Sign in and create a new bot for your use case.
+3. Copy the bot token after the bot is created successfully.
+4. Save the token into `.env` before running the local test scripts.
+
+![QR code to the bot management page](/image/zbot-creator_qrcode.jpg)
+
+If you are reading the documentation on a different screen or device, scan the QR code to jump directly to the bot management page.
 
 ## Install dependencies
 
@@ -82,3 +101,16 @@ void app.runPolling();
 
 - `test:token`: validate token and bot identity only
 - `test:hello-bot`: validate token, polling, handlers, and reply flow together
+
+## Practical notes
+
+- long polling may wait for a while when there are no new updates
+- if the API returns a thin response payload, the SDK already includes fallback parsing for sent messages
+- webhook is a better fit once you have a stable public server and URL
+
+## Next
+
+- See [Examples and tests](./examples.md) if you want to choose between polling, webhook, and validation scripts.
+- Read [Architecture](./architecture.md) if you want to understand how the SDK is organized before extending it.
+
+Last updated: April 5, 2026

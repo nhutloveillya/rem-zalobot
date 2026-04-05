@@ -2,84 +2,79 @@
 
 ## Overview
 
-The SDK is currently organized into clear layers:
+The current SDK is divided into clear layers:
 
-- `src/request`: HTTP transport and API error mapping
-- `src/models`: payload parsing for `User`, `Chat`, `Message`, `Update`, `WebhookInfo`
+- `src/request`: handle HTTP transport and map API errors
+- `src/models`: parse payload into `User`, `Chat`, `Message`, `Update`, `WebhookInfo`
 - `src/core`: `Bot`, `Application`, `ApplicationBuilder`, `CallbackContext`
-- `src/handlers`: command and message handling
-- `src/filters`: composable update filters
-- `src/i18n`: runtime message dictionaries for `vi/en`
+- `src/handlers`: handle commands and messages
+- `src/filters`: filters can be combined
+- `src/i18n`: runtime message system for `vi/en`
 
-## Runtime flow
+## Basic run flow
 
-```text
-App code
-  -> ApplicationBuilder
-  -> Application
-  -> Bot
-  -> Request layer
-  -> Zalo Bot API
-  -> Update model
-  -> Handler layer
-  -> Your callback
-```
+![Bot runtime flow](/image/usecase-bot.png)
 
-## Porting direction
+## Mapping from Python to TypeScript
 
-This project is based on the `python_zalo_bot` reference package, but it is not a mechanical port. The TypeScript version intentionally simplifies Python-specific patterns:
+This project is referenced from `python_zalo_bot`, but not mechanically copied.Some parts have been simplified:
 
-- no `__slots__` or sentinel default wrappers
-- explicit `initialize()` and `shutdown()` lifecycle
-- lighter TypeScript-native models and parsers
-- fallback parsing for thin API message responses
+- remove Python-only patterns like `__slots__`, sentinel defaults, freeze object
+- keep lifecycle clear via `initialize()` and `shutdown()`
+- Prioritize objects and more compact TypeScript parsers
+- fallback parse for message sending response if the API returns a thin payload
 
-## What each layer is responsible for
+## Role of each main block
 
 ### `src/request`
 
-This is the transport layer. It handles:
+This is the bottom layer of the SDK.It is responsible for:
 
-- HTTP requests to the Zalo Bot API
-- timeout handling
-- mapping HTTP/API failures to SDK errors
+- HTTP call to Zalo Bot API
+- handle timeouts
+- map HTTP status to custom error
 
 ### `src/models`
 
-This layer parses raw payloads into objects that are easier to use in handlers and app code.
+Models receive the raw payload and convert it into an object that is easier to use in code, for example:
+
+- `Update`
+- `Message`
+- `User`
+- `Chat`
 
 ### `src/core`
 
-This is the main orchestration layer:
+Here is the main dispatcher:
 
-- `Bot` sends requests and wraps API methods
-- `Application` runs polling and dispatches updates
-- `ApplicationBuilder` provides a cleaner setup flow
+- `Bot`: client calls API
+- `Application`: polling round and dispatch update
+- `ApplicationBuilder`: clearer way to initialize the app
 
 ### `src/handlers` and `src/filters`
 
-These power the event-driven developer experience:
+These two parts create event-driven programming:
 
-- `CommandHandler` for commands like `/start`
-- `MessageHandler` for text and other content
-- `filters` for readable matching rules
+- `CommandHandler` is used for commands like `/start`
+- `MessageHandler` is used for text, photos or other filters
+- `filters` allows combining conditions in an easy-to-read fashion
 
 ### `src/i18n`
 
-This layer reads `ZALO_BOT_LANG` and decides whether runtime messages should be emitted in Vietnamese or English.
+This section reads `ZALO_BOT_LANG` and decides whether log/runtime messages should be displayed in Vietnamese or English.
 
-## Current limitations
+## Current limit
 
-- no full multipart media abstraction yet
-- no worker queue layer yet
-- no framework-specific webhook adapters packaged separately
+- There is no full media upload abstraction yet
+- There is no worker queue layer yet
+- webhook framework adapters have not been separated into separate packages
 
-## Polling lifecycle
+## Thread runs when polling
 
-1. Build the app with `ApplicationBuilder`
+1. App is created from `ApplicationBuilder`
 2. `Application.runPolling()` calls `Bot.initialize()`
-3. `Bot.initialize()` validates the token through `getMe()`
-4. `Application` repeatedly calls `getUpdate()`
-5. payloads are parsed into `Update` and `Message`
-6. the first matching handler processes the update
-7. your callback can reply through `replyText()` or other bot methods
+3. `Bot.initialize()` checks the token via `getMe()`
+4. `Application` repeats `getUpdate()`
+5. `Update` is parsed into a model
+6. The first Handler to match will handle the update
+7. Your callback can call `replyText()` or other message sending methods

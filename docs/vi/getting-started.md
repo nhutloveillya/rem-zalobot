@@ -1,9 +1,28 @@
 # Bắt đầu nhanh
 
+Trang này hướng dẫn bạn thiết lập môi trường, cấu hình token bot và chạy thử các flow cơ bản với `zalo-bot-js`.
+
+Nếu bạn mới bắt đầu, hãy làm theo thứ tự: cài đặt, tạo `.env`, kiểm tra token, sau đó chạy bot thử bằng polling.
+
 ## Yêu cầu
 
 - Node.js 18 trở lên
 - một bot token hợp lệ từ Zalo Bot
+
+## Tạo bot và lấy token
+
+Trước khi chạy các ví dụ trong tài liệu này, bạn cần tạo bot trên trang quản lý bot và lấy token tương ứng cho môi trường của mình.
+
+Quy trình khuyến nghị:
+
+1. Mở trang quản lý bot bằng mã QR bên dưới.
+2. Đăng nhập và tạo bot mới theo nhu cầu của bạn.
+3. Sao chép bot token sau khi bot được tạo thành công.
+4. Lưu token vào file `.env` trước khi chạy các script test.
+
+![Mã QR tới trang quản lý bot](/image/zbot-creator_qrcode.jpg)
+
+Nếu bạn mở tài liệu trên điện thoại hoặc một màn hình khác, chỉ cần quét mã QR để đi thẳng tới trang quản lý bot.
 
 ## Cài đặt
 
@@ -88,3 +107,10 @@ void app.runPolling();
 - Long polling có thể chờ lâu nếu không có update mới
 - Nếu API trả payload phản hồi mỏng, SDK hiện đã có fallback parse cho message gửi đi
 - Webhook phù hợp hơn khi bạn đã có server và URL public ổn định
+
+## Kế tiếp
+
+- Xem [Ví dụ và test](./examples.md) nếu bạn muốn chọn giữa polling, webhook và các script xác minh.
+- Đọc [Kiến trúc](./architecture.md) nếu bạn muốn hiểu cách SDK được tổ chức trước khi mở rộng thêm.
+
+Cập nhật lần cuối: 05/04/2026

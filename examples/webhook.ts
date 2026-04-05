@@ -12,7 +12,7 @@ async function main() {
 
   const bot = new Bot({ token });
   bot.on("message", async (message) => {
-    await bot.sendMessage(message.chat.id, "Xin chao!");
+    console.log("Webhook received message:", message.text ?? message.messageId);
   });
 
   bot.onText(/\/start(?:\s+(.+))?/, async (message, match) => {
@@ -20,8 +20,21 @@ async function main() {
     await bot.sendMessage(message.chat.id, `Webhook nhan /start tu ${payload}`);
   });
 
-  await bot.setWebHook(webhookUrl, {
-    secret_token: secretToken,
+  bot.onText(/\/ping/, async (message) => {
+    await bot.sendMessage(message.chat.id, "pong tu webhook");
+  });
+
+  bot.onText(/\/help/, async (message) => {
+    await bot.sendMessage(
+      message.chat.id,
+      "Webhook bot san sang.\nThu lenh: /start, /ping, /help\nHoac gui hello de kiem tra text event.",
+    );
+  });
+
+  bot.on("text", async (message) => {
+    if (message.text === "hello") {
+      await bot.sendMessage(message.chat.id, "Xin chao! Day la phan hoi tu webhook bot.");
+    }
   });
 
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
@@ -45,7 +58,13 @@ async function main() {
     res.end("ok");
   });
 
-  server.listen(3000);
+  server.listen(3000, async () => {
+    await bot.setWebHook(webhookUrl, {
+      secret_token: secretToken,
+    });
+    console.log("Webhook server listening on http://localhost:3000/webhook");
+    console.log(`Webhook registered: ${webhookUrl}`);
+  });
 }
 
 function readBody(req: IncomingMessage): Promise<string> {
