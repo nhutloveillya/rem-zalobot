@@ -25,8 +25,9 @@ export class FetchRequest extends BaseRequest {
     options?: RequestOptions,
   ): Promise<TransportResponse> {
     const timeoutMs = this.resolveTimeout(options);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
+    const signal = mergeSignals(options?.signal, timeoutController.signal);
 
     try {
       const response = await fetch(url, {
@@ -36,7 +37,7 @@ export class FetchRequest extends BaseRequest {
           "User-Agent": "zalo-bot-js",
         },
         body: method === "POST" ? JSON.stringify(this.compactPayload(data)) : undefined,
-        signal: controller.signal,
+        signal,
       });
 
       return {
@@ -45,6 +46,9 @@ export class FetchRequest extends BaseRequest {
       };
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
+        if (options?.signal?.aborted) {
+          throw new TimedOut("Request aborted");
+        }
         throw new TimedOut();
       }
       throw new NetworkError(`fetch.${error instanceof Error ? error.message : String(error)}`);
@@ -72,4 +76,28 @@ export class FetchRequest extends BaseRequest {
       Object.entries(data).filter(([, value]) => value !== undefined && value !== null),
     ) as Record<string, string | number | boolean>;
   }
+}
+
+function mergeSignals(signalA?: AbortSignal, signalB?: AbortSignal): AbortSignal | undefined {
+  if (!signalA) {
+    return signalB;
+  }
+  if (!signalB) {
+    return signalA;
+  }
+  if (signalA.aborted || signalB.aborted) {
+    const controller = new AbortController();
+    controller.abort();
+    return controller.signal;
+  }
+
+  const controller = new AbortController();
+  const abort = () => {
+    controller.abort();
+    signalA.removeEventListener("abort", abort);
+    signalB.removeEventListener("abort", abort);
+  };
+  signalA.addEventListener("abort", abort, { once: true });
+  signalB.addEventListener("abort", abort, { once: true });
+  return controller.signal;
 }

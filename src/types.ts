@@ -11,4 +11,5 @@ export interface RequestOptions {
   writeTimeout?: number;
   connectTimeout?: number;
   poolTimeout?: number;
+  signal?: AbortSignal;
 }

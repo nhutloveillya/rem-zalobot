@@ -3,6 +3,12 @@ import type { JsonObject } from "../types";
 import { Message } from "./Message";
 import { User } from "./User";
 
+export interface ParsedCommand {
+  name: string;
+  argsRaw: string;
+  args: string[];
+}
+
 export class Update {
   constructor(
     public readonly updateId?: number,
@@ -23,7 +29,7 @@ export class Update {
 
     if (this.message?.text) {
       eventTypes.add("text");
-      if (this.message.text.trim().startsWith("/")) {
+      if (this.command) {
         eventTypes.add("command");
       }
     }
@@ -41,6 +47,10 @@ export class Update {
 
   hasEventType(eventType: string): boolean {
     return this.eventTypes.includes(eventType);
+  }
+
+  get command(): ParsedCommand | undefined {
+    return parseCommand(this.message?.text);
   }
 
   static fromApi(data?: JsonObject, bot?: Bot): Update | undefined {
@@ -65,4 +75,29 @@ function asJsonObject(value: unknown): JsonObject | undefined {
   }
 
   return value as JsonObject;
+}
+
+export function parseCommand(text: string | undefined): ParsedCommand | undefined {
+  if (!text) {
+    return undefined;
+  }
+
+  const normalized = text.trim();
+  if (!normalized.startsWith("/") || normalized.length <= 1) {
+    return undefined;
+  }
+
+  const body = normalized.slice(1);
+  const [rawName, ...rest] = body.split(/\s+/);
+  const name = rawName.trim();
+  if (!name) {
+    return undefined;
+  }
+
+  const argsRaw = rest.join(" ").trim();
+  return {
+    name,
+    argsRaw,
+    args: argsRaw ? argsRaw.split(/\s+/) : [],
+  };
 }

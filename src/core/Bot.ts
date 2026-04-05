@@ -3,7 +3,7 @@ import { InvalidToken, TimedOut } from "../errors";
 import { t } from "../i18n/runtime";
 import { Chat } from "../models/Chat";
 import { Message } from "../models/Message";
-import { Update } from "../models/Update";
+import { type ParsedCommand, Update } from "../models/Update";
 import { User } from "../models/User";
 import { WebhookInfo } from "../models/WebhookInfo";
 import { BaseRequest, type RequestPayload } from "../request/BaseRequest";
@@ -16,6 +16,8 @@ export interface BotConfig {
   request?: BaseRequest;
   pollingRequest?: BaseRequest;
   polling?: boolean | PollingOptions;
+  logger?: BotLogger;
+  onError?: BotErrorHandler;
 }
 
 export interface BotConstructorOptions extends Omit<BotConfig, "token"> {}
@@ -30,6 +32,7 @@ export interface GetUpdatesParams {
 export interface EventMetadata {
   match?: RegExpExecArray;
   update: Update;
+  command?: ParsedCommand;
 }
 
 export interface PollingOptions {
@@ -37,6 +40,7 @@ export interface PollingOptions {
   retryDelayMs?: number;
   allowedUpdates?: string[];
   onUpdate?: (update: Update) => Promise<void> | void;
+  onError?: BotErrorHandler;
 }
 
 export type BotEvent =
@@ -51,9 +55,46 @@ export type BotEventCallback = (
   metadata: EventMetadata,
 ) => Promise<void> | void;
 
+export interface CommandContext {
+  command: ParsedCommand;
+  update: Update;
+}
+
+export type CommandCallback = (
+  message: Message,
+  context: CommandContext,
+) => Promise<void> | void;
+
+export type PollingState = "idle" | "starting" | "running" | "stopping";
+
+export interface BotErrorContext {
+  kind: "request_temporary" | "payload_parse" | "listener_user_code";
+  source: "polling" | "event_dispatch" | "text_listener" | "command_listener";
+  update?: Update;
+  event?: BotEvent;
+  command?: ParsedCommand;
+}
+
+export type BotErrorHandler = (error: unknown, context: BotErrorContext) => Promise<void> | void;
+
+export interface BotLogger {
+  error(message: string, error: unknown, context?: BotErrorContext): void;
+}
+
+type EventListener = {
+  callback: BotEventCallback;
+  once: boolean;
+};
+
 type TextListener = {
   pattern: RegExp;
   callback: (message: Message, match: RegExpExecArray) => Promise<void> | void;
+  once: boolean;
+};
+
+type CommandListener = {
+  command: string;
+  callback: CommandCallback;
 };
 
 export class Bot {
@@ -61,10 +102,14 @@ export class Bot {
   private readonly request: [BaseRequest, BaseRequest];
   private initialized = false;
   private botUser?: User;
-  private readonly eventListeners = new Map<BotEvent, BotEventCallback[]>();
+  private readonly eventListeners = new Map<BotEvent, EventListener[]>();
   private readonly textListeners: TextListener[] = [];
-  private polling = false;
+  private readonly commandListeners: CommandListener[] = [];
+  private readonly errorHandlers: BotErrorHandler[] = [];
+  private readonly logger: BotLogger;
+  private pollingState: PollingState = "idle";
   private pollingTask?: Promise<void>;
+  private pollingAbortController?: AbortController;
   private nextUpdateOffset?: number;
 
   private readonly config: BotConfig;
@@ -89,13 +134,20 @@ export class Bot {
       config.pollingRequest ?? new FetchRequest(),
       config.request ?? new FetchRequest(),
     ];
+    this.logger = config.logger ?? defaultLogger;
+    if (config.onError) {
+      this.errorHandlers.push(config.onError);
+    }
 
     if (config.polling) {
       const pollingOptions =
         typeof config.polling === "object" ? config.polling : undefined;
       queueMicrotask(() => {
         void this.startPolling(pollingOptions).catch((error) => {
-          console.error(t("app.pollingFetchError"), error);
+          this.reportError(error, {
+            kind: "request_temporary",
+            source: "polling",
+          });
         });
       });
     }
@@ -244,8 +296,28 @@ export class Bot {
 
   on(event: BotEvent, callback: BotEventCallback): this {
     const listeners = this.eventListeners.get(event) ?? [];
-    listeners.push(callback);
+    listeners.push({ callback, once: false });
     this.eventListeners.set(event, listeners);
+    return this;
+  }
+
+  once(event: BotEvent, callback: BotEventCallback): this {
+    const listeners = this.eventListeners.get(event) ?? [];
+    listeners.push({ callback, once: true });
+    this.eventListeners.set(event, listeners);
+    return this;
+  }
+
+  off(event: BotEvent, callback: BotEventCallback): this {
+    const listeners = this.eventListeners.get(event);
+    if (!listeners) {
+      return this;
+    }
+
+    this.eventListeners.set(
+      event,
+      listeners.filter((listener) => listener.callback !== callback),
+    );
     return this;
   }
 
@@ -253,13 +325,51 @@ export class Bot {
     pattern: RegExp,
     callback: (message: Message, match: RegExpExecArray) => Promise<void> | void,
   ): this {
-    this.textListeners.push({ pattern, callback });
+    this.textListeners.push({ pattern, callback, once: false });
+    return this;
+  }
+
+  offText(
+    pattern: RegExp,
+    callback: (message: Message, match: RegExpExecArray) => Promise<void> | void,
+  ): this {
+    const patternSource = pattern.toString();
+    for (let index = this.textListeners.length - 1; index >= 0; index -= 1) {
+      const listener = this.textListeners[index];
+      if (listener.pattern.toString() === patternSource && listener.callback === callback) {
+        this.textListeners.splice(index, 1);
+      }
+    }
+    return this;
+  }
+
+  command(command: string, callback: CommandCallback): this {
+    const normalized = normalizeCommand(command);
+    if (!normalized) {
+      throw new Error("Command name must not be empty");
+    }
+
+    this.commandListeners.push({
+      command: normalized,
+      callback,
+    });
+    return this;
+  }
+
+  onError(callback: BotErrorHandler): this {
+    this.errorHandlers.push(callback);
     return this;
   }
 
   async processUpdate(update: Update | JsonObject): Promise<void> {
     const normalizedUpdate = update instanceof Update ? update : Update.fromApi(update, this);
     if (!normalizedUpdate?.message) {
+      if (!(update instanceof Update)) {
+        await this.reportError(new Error("Unable to parse incoming update payload"), {
+          kind: "payload_parse",
+          source: "event_dispatch",
+        });
+      }
       return;
     }
 
@@ -267,19 +377,71 @@ export class Bot {
       this.nextUpdateOffset = normalizedUpdate.updateId + 1;
     }
 
-    const metadata: EventMetadata = { update: normalizedUpdate };
+    const metadata: EventMetadata = {
+      update: normalizedUpdate,
+      command: normalizedUpdate.command,
+    };
     for (const eventType of normalizedUpdate.eventTypes) {
-      const listeners = this.eventListeners.get(eventType as BotEvent) ?? [];
+      const listeners = [...(this.eventListeners.get(eventType as BotEvent) ?? [])];
       for (const listener of listeners) {
-        await listener(normalizedUpdate.message, metadata);
+        try {
+          await listener.callback(normalizedUpdate.message, metadata);
+        } catch (error) {
+          await this.reportError(error, {
+            kind: "listener_user_code",
+            source: "event_dispatch",
+            update: normalizedUpdate,
+            event: eventType as BotEvent,
+            command: normalizedUpdate.command,
+          });
+        } finally {
+          if (listener.once) {
+            this.off(eventType as BotEvent, listener.callback);
+          }
+        }
       }
     }
 
     if (normalizedUpdate.message.text) {
-      for (const listener of this.textListeners) {
+      for (const listener of [...this.textListeners]) {
         const match = createRegexMatcher(listener.pattern).exec(normalizedUpdate.message.text);
         if (match) {
-          await listener.callback(normalizedUpdate.message, match);
+          try {
+            await listener.callback(normalizedUpdate.message, match);
+          } catch (error) {
+            await this.reportError(error, {
+              kind: "listener_user_code",
+              source: "text_listener",
+              update: normalizedUpdate,
+              command: normalizedUpdate.command,
+            });
+          } finally {
+            if (listener.once) {
+              this.offText(listener.pattern, listener.callback);
+            }
+          }
+        }
+      }
+    }
+
+    if (normalizedUpdate.command) {
+      for (const listener of this.commandListeners) {
+        if (listener.command !== normalizedUpdate.command.name.toLowerCase()) {
+          continue;
+        }
+        try {
+          await listener.callback(normalizedUpdate.message, {
+            command: normalizedUpdate.command,
+            update: normalizedUpdate,
+          });
+        } catch (error) {
+          await this.reportError(error, {
+            kind: "listener_user_code",
+            source: "command_listener",
+            update: normalizedUpdate,
+            command: normalizedUpdate.command,
+            event: "command",
+          });
         }
       }
     }
@@ -290,20 +452,31 @@ export class Bot {
       return this.pollingTask;
     }
 
+    this.pollingState = "starting";
+    this.pollingAbortController = new AbortController();
     this.pollingTask = this.runPolling(options).finally(() => {
-      this.polling = false;
+      this.pollingState = "idle";
       this.pollingTask = undefined;
+      this.pollingAbortController = undefined;
     });
 
     return this.pollingTask;
   }
 
   stopPolling(): void {
-    this.polling = false;
+    if (this.pollingState === "idle") {
+      return;
+    }
+    this.pollingState = "stopping";
+    this.pollingAbortController?.abort();
   }
 
   isPolling(): boolean {
-    return this.polling;
+    return this.pollingState !== "idle";
+  }
+
+  getPollingState(): PollingState {
+    return this.pollingState;
   }
 
   async setWebHook(url: string, options?: { secret_token?: string }): Promise<boolean> {
@@ -322,38 +495,89 @@ export class Bot {
     return this.botUser;
   }
 
+  private async reportError(
+    error: unknown,
+    context: BotErrorContext,
+    overrideHandler?: BotErrorHandler,
+  ): Promise<void> {
+    this.logger.error(t("app.pollingFetchError"), error, context);
+
+    const handlers = [
+      ...(overrideHandler ? [overrideHandler] : []),
+      ...this.errorHandlers,
+    ];
+    for (const handler of handlers) {
+      try {
+        await handler(error, context);
+      } catch (handlerError) {
+        this.logger.error("Unhandled error from bot onError callback", handlerError, context);
+      }
+    }
+  }
+
   private async runPolling(options: PollingOptions): Promise<void> {
     const timeoutSeconds = options.timeoutSeconds ?? DEFAULT_POLL_TIMEOUT_SECONDS;
     const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
+    const errorHandler = options.onError;
 
     await this.initialize();
-    this.polling = true;
+    if (this.pollingState === "stopping") {
+      return;
+    }
+    this.pollingState = "running";
 
     try {
-      while (this.polling) {
+      while (this.pollingState === "running") {
         try {
           const updates = await this.getUpdates({
             timeout: timeoutSeconds,
             offset: this.nextUpdateOffset,
             allowedUpdates: options.allowedUpdates,
+          }, {
+            signal: this.pollingAbortController?.signal,
           });
 
           if (updates.length > 0) {
             for (const update of updates) {
               if (options.onUpdate) {
-                await options.onUpdate(update);
+                try {
+                  await options.onUpdate(update);
+                } catch (error) {
+                  await this.reportError(
+                    error,
+                    {
+                      kind: "listener_user_code",
+                      source: "polling",
+                      update,
+                    },
+                    errorHandler,
+                  );
+                }
               }
               await this.processUpdate(update);
+              if (this.pollingState !== "running") {
+                break;
+              }
             }
             continue;
           }
         } catch (error) {
-          if (!(error instanceof TimedOut)) {
-            console.error(t("app.pollingFetchError"), error);
+          if (!(error instanceof TimedOut) && this.pollingState === "running") {
+            await this.reportError(
+              error,
+              {
+                kind: "request_temporary",
+                source: "polling",
+              },
+              errorHandler,
+            );
           }
         }
 
-        await sleep(retryDelayMs);
+        if (this.pollingState !== "running") {
+          break;
+        }
+        await sleepWithAbort(retryDelayMs, this.pollingAbortController?.signal);
       }
     } finally {
       await this.shutdown();
@@ -450,6 +674,40 @@ function isDefined<T>(value: T | undefined): value is T {
 function createRegexMatcher(pattern: RegExp): RegExp {
   const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
   return new RegExp(pattern.source, flags);
+}
+
+function normalizeCommand(command: string): string {
+  const normalized = command.trim().replace(/^\//, "");
+  return normalized.toLowerCase();
+}
+
+const defaultLogger: BotLogger = {
+  error(message: string, error: unknown): void {
+    console.error(message, error);
+  },
+};
+
+async function sleepWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  if (!signal) {
+    await sleep(ms);
+    return;
+  }
+  if (signal.aborted) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const timeout = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 function sleep(ms: number): Promise<void> {

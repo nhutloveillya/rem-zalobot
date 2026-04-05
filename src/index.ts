@@ -28,14 +28,21 @@ export { BaseRequest } from "./request/BaseRequest";
 export { FetchRequest } from "./request/FetchRequest";
 export type { MessageKey, SupportedLanguage } from "./i18n/messages";
 export type {
+  BotErrorContext,
+  BotErrorHandler,
   BotConfig,
   BotConstructorOptions,
   BotEvent,
   BotEventCallback,
+  BotLogger,
+  CommandCallback,
+  CommandContext,
   EventMetadata,
   GetUpdatesParams,
+  PollingState,
   PollingOptions,
 } from "./core/Bot";
 export type { Filter } from "./filters";
 export type { Handler, HandlerCallback } from "./handlers/BaseHandler";
 export type { JsonObject, JsonValue, RequestOptions } from "./types";
+export type { ParsedCommand } from "./models/Update";
