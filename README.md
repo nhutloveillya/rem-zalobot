@@ -180,4 +180,4 @@ Useful local scripts:
 
 ## License
 
-MIT License. See `package.json` for the current project license metadata.
+MIT License. See [LICENSE](./LICENSE) for details.
