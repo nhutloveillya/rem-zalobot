@@ -46,6 +46,15 @@ ZALO_BOT_LANG=vi
 
 Nếu không cấu hình, SDK hiện mặc định dùng `vi`.
 
+## Chọn style API
+
+`zalo-bot-js` hỗ trợ lâu dài hai style, và dùng chung logic parse command:
+
+- Event API (`bot.on(...)`, `bot.command(...)`) là hướng chính cho đa số bot.
+- Handler API (`ApplicationBuilder`, `CommandHandler`, `MessageHandler`) phù hợp khi team muốn routing theo handler/filter.
+
+Do dùng parser chung, `/Start  demo` và `/start demo` sẽ match nhất quán ở cả hai style.
+
 ## Kiểm tra token
 
 ```bash

@@ -42,6 +42,17 @@ async function main() {
     );
   });
 
+  bot.command("photos", async (message) => {
+    await bot.sendPhotos(
+      message.chat.id,
+      [
+        "https://example.com/photo-1.jpg",
+        "https://example.com/photo-2.jpg",
+      ],
+      "Album fallback from SDK",
+    );
+  });
+
   await bot.startPolling();
 }
 

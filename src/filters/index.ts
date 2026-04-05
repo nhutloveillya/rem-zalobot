@@ -16,7 +16,7 @@ function createFilter(predicate: (update: Update) => boolean): Filter {
 
 export const filters = {
   TEXT: createFilter((update) => Boolean(update.message?.text)),
-  COMMAND: createFilter((update) => Boolean(update.message?.text?.startsWith("/"))),
+  COMMAND: createFilter((update) => Boolean(update.command)),
   PHOTO: createFilter((update) => Boolean(update.message?.photoUrl)),
   STICKER: createFilter((update) => Boolean(update.message?.sticker)),
   ALL: createFilter(() => true),

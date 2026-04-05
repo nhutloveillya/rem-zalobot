@@ -13,6 +13,7 @@
 - Built-in polling runtime with `startPolling()`
 - Webhook integration through `processUpdate()` and `setWebhook()`
 - Message sending APIs such as `sendMessage()`, `sendPhoto()`, `sendSticker()`, and `sendChatAction()`
+- Sequential multi-photo helper `sendPhotos()` with indexed captions
 - Handler-based APIs with `Application`, `ApplicationBuilder`, `CommandHandler`, `MessageHandler`, and `filters`
 
 ## Who This Is For
@@ -22,6 +23,7 @@ This SDK is for developers who want to:
 - build a Zalo bot in Node.js or TypeScript
 - start quickly with polling before moving to webhook
 - organize bot logic with either event listeners or handler-based APIs
+- choose event API as default or handler API when command/filter routing is preferred
 - integrate bot flows with internal services, workflow engines, or external systems
 
 ## Documentation Path
@@ -103,8 +105,13 @@ Detailed guide: [Getting started](https://kaiyodev.github.io/zalo-bot-js/vi/gett
 
 - `sendMessage()`
 - `sendPhoto()`
+- `sendPhotos()`
 - `sendSticker()`
 - `sendChatAction()`
+- `editMessageText()`, `deleteMessage()`, `pinMessage()`, `unpinMessage()`
+- `banChatMember()`, `unbanChatMember()`, `promoteChatAdmin()`, `demoteChatAdmin()`
+- `setChatKeyboard()`, `deleteChatKeyboard()`
+- `uploadFile()`, `getFileInfo()`, `getFileDownloadUrl()`
 
 ### Webhook
 
@@ -116,6 +123,7 @@ Detailed guide: [Getting started](https://kaiyodev.github.io/zalo-bot-js/vi/gett
 
 - `on("message" | "text" | "photo" | "sticker" | "command", callback)`
 - `onText(regexp, callback)`
+- `command(name, callback)`
 
 ### Message helpers
 
@@ -132,6 +140,8 @@ Detailed guide: [Getting started](https://kaiyodev.github.io/zalo-bot-js/vi/gett
 - `MessageHandler`
 - `filters`
 - `CallbackContext`
+
+The handler/filter API remains a long-term compatibility layer. Command parsing semantics are shared with event-style `bot.command(...)`, so trimming, case-insensitive matching, and argument parsing behave consistently across both styles.
 
 ## Event Shape In This SDK
 
@@ -224,7 +234,7 @@ The SDK currently focuses on the practical bot core and the most common message 
 Current limitations:
 
 - multipart media upload is still incomplete
-- sending multiple images in a single native album-style Zalo message is not implemented
+- native single-call album send is not implemented; use `sendPhotos()` fallback for now
 - framework-specific webhook adapters are not split into separate packages
 
 ## Read Next

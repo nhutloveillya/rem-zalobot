@@ -10,16 +10,11 @@ export class CommandHandler implements Handler {
   ) {}
 
   checkUpdate(update: Update): boolean {
-    const text = update.message?.text?.trim();
-    if (!text) {
-      return false;
-    }
-
-    return text.split(/\s+/)[0] === `/${this.command}`;
+    return update.command?.name.toLowerCase() === this.command.toLowerCase();
   }
 
   async handleUpdate(update: Update, application: Application): Promise<void> {
-    const args = update.message?.text?.trim().split(/\s+/).slice(1) ?? [];
-    await this.callback(update, new CallbackContext(application, args));
+    const command = update.command;
+    await this.callback(update, new CallbackContext(application, command?.args ?? [], command));
   }
 }

@@ -37,12 +37,42 @@ export type {
   BotLogger,
   CommandCallback,
   CommandContext,
+  DeleteChatKeyboardOptions,
+  DeleteMessageOptions,
+  DemoteAdminOptions,
+  EditMessageTextOptions,
   EventMetadata,
+  FileInfo,
+  GetFileDownloadUrlOptions,
+  GetFileInfoOptions,
   GetUpdatesParams,
+  PinMessageOptions,
+  PromoteAdminOptions,
   PollingState,
   PollingOptions,
+  SendMessageOptions,
+  SendPhotoOptions,
+  SendPhotosOptions,
+  SendStickerOptions,
+  SetChatKeyboardOptions,
+  UnbanUserOptions,
+  UnpinMessageOptions,
+  UploadFileOptions,
+  WebhookOptions,
+  BanUserOptions,
 } from "./core/Bot";
 export type { Filter } from "./filters";
 export type { Handler, HandlerCallback } from "./handlers/BaseHandler";
-export type { JsonObject, JsonValue, RequestOptions } from "./types";
+export type {
+  JsonObject,
+  JsonValue,
+  RequestAttemptContext,
+  RequestHooks,
+  RequestOptions,
+  RequestResponseContext,
+  RetryErrorKind,
+  RetryPolicy,
+  TimeoutPolicy,
+  TimeoutProfile,
+} from "./types";
 export type { ParsedCommand } from "./models/Update";

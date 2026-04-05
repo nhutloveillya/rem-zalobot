@@ -4,6 +4,11 @@ import { BaseRequest, type RequestPayload, type TransportResponse } from "./Base
 
 export interface FetchRequestConfig {
   readTimeout?: number;
+  timeoutPolicy?: {
+    shortMs?: number;
+    standardMs?: number;
+    longPollMs?: number;
+  };
 }
 
 export class FetchRequest extends BaseRequest {
@@ -58,6 +63,19 @@ export class FetchRequest extends BaseRequest {
   }
 
   private resolveTimeout(options?: RequestOptions): number {
+    const explicitPolicy = options?.timeoutPolicy;
+    const configPolicy = this.config.timeoutPolicy;
+    const profile = options?.timeoutProfile ?? "standard";
+    const profileTimeout =
+      profile === "short"
+        ? explicitPolicy?.shortMs ?? configPolicy?.shortMs
+        : profile === "long_poll"
+          ? explicitPolicy?.longPollMs ?? configPolicy?.longPollMs
+          : explicitPolicy?.standardMs ?? configPolicy?.standardMs;
+    if (typeof profileTimeout === "number" && Number.isFinite(profileTimeout)) {
+      return Math.max(profileTimeout, 0);
+    }
+
     const readTimeoutSeconds = options?.readTimeout;
 
     if (typeof readTimeoutSeconds === "number" && Number.isFinite(readTimeoutSeconds)) {

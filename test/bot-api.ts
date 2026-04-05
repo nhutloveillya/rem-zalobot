@@ -10,6 +10,8 @@ class MockRequest extends BaseRequest {
     super();
   }
 
+  readonly callCount: Record<string, number> = {};
+
   async initialize(): Promise<void> {}
 
   async shutdown(): Promise<void> {}
@@ -20,11 +22,37 @@ class MockRequest extends BaseRequest {
     _options?: RequestOptions,
   ): Promise<JsonObject | JsonObject[] | boolean | undefined> {
     const endpoint = url.split("/").pop() ?? "";
+    this.callCount[endpoint] = (this.callCount[endpoint] ?? 0) + 1;
     return this.responses[endpoint];
   }
 
   protected async doRequest(): Promise<never> {
     throw new Error("MockRequest.doRequest should not be called");
+  }
+}
+
+class HookRequest extends BaseRequest {
+  readonly readTimeout = 0;
+
+  constructor(private readonly responses: Record<string, JsonObject | JsonObject[] | boolean>) {
+    super();
+  }
+
+  async initialize(): Promise<void> {}
+
+  async shutdown(): Promise<void> {}
+
+  protected async doRequest(
+    url: string,
+    _method: "GET" | "POST",
+    _data?: RequestPayload,
+  ): Promise<{ status: number; body: string }> {
+    const endpoint = url.split("/").pop() ?? "";
+    const result = this.responses[endpoint];
+    return {
+      status: 200,
+      body: JSON.stringify({ result }),
+    };
   }
 }
 
@@ -113,6 +141,27 @@ async function main() {
     text: "ok",
   } satisfies JsonObject;
 
+  const sendPhotoResult = {
+    message_id: "m-photo",
+    date: Date.now(),
+    chat: {
+      id: "chat-1",
+      type: "direct",
+    },
+    photo_url: "https://example.com/photo.jpg",
+    text: "[1/2] Album fallback from SDK",
+  } satisfies JsonObject;
+
+  const editMessageResult = {
+    message_id: "m-edit",
+    date: Date.now(),
+    chat: {
+      id: "chat-1",
+      type: "direct",
+    },
+    text: "edited",
+  } satisfies JsonObject;
+
   const webhookInfoResult = {
     url: "https://example.com/webhook",
     has_custom_certificate: false,
@@ -122,6 +171,30 @@ async function main() {
   const request = new MockRequest({
     getMe: getMeResult,
     sendMessage: sendMessageResult,
+    sendPhoto: sendPhotoResult,
+    editMessageText: editMessageResult,
+    deleteMessage: true,
+    pinMessage: true,
+    unpinMessage: true,
+    banChatMember: true,
+    unbanChatMember: true,
+    promoteChatAdmin: true,
+    demoteChatAdmin: true,
+    setChatKeyboard: true,
+    deleteChatKeyboard: true,
+    uploadFile: {
+      file_id: "file-1",
+      file_path: "/files/1",
+      file_size: 123,
+    },
+    getFileInfo: {
+      file_id: "file-1",
+      file_path: "/files/1",
+      file_size: 123,
+    },
+    getFileDownloadUrl: {
+      file_url: "https://example.com/files/1",
+    },
     setWebhook: true,
     deleteWebhook: true,
     getWebhookInfo: webhookInfoResult,
@@ -313,6 +386,72 @@ async function main() {
     throw new Error("sendMessage did not return parsed message");
   }
 
+  const sentPhotos = await bot.sendPhotos(
+    "chat-1",
+    ["https://example.com/photo-1.jpg", "https://example.com/photo-2.jpg"],
+    "Album fallback from SDK",
+  );
+  if (sentPhotos.length !== 2) {
+    throw new Error(`Expected 2 sent photos but got ${sentPhotos.length}`);
+  }
+  if ((request.callCount.sendPhoto ?? 0) !== 2) {
+    throw new Error(`Expected sendPhoto to be called 2 times but got ${request.callCount.sendPhoto ?? 0}`);
+  }
+
+  const edited = await bot.editMessageText("chat-1", "m-2", "edited");
+  if (edited.text !== "edited") {
+    throw new Error("editMessageText did not return edited payload");
+  }
+
+  const deleted = await bot.deleteMessage("chat-1", "m-2");
+  const pinned = await bot.pinMessage("chat-1", "m-2");
+  const unpinned = await bot.unpinMessage("chat-1", "m-2");
+  const banned = await bot.banChatMember("chat-1", "user-2", { reason: "spam" });
+  const unbanned = await bot.unbanChatMember("chat-1", "user-2");
+  const promoted = await bot.promoteChatAdmin("chat-1", "user-2", { role: "moderator" });
+  const demoted = await bot.demoteChatAdmin("chat-1", "user-2");
+  const keyboardSet = await bot.setChatKeyboard("chat-1", { buttons: ["A"] });
+  const keyboardDeleted = await bot.deleteChatKeyboard("chat-1");
+  const uploadedFile = await bot.uploadFile("https://example.com/files/1.jpg");
+  const fileInfo = await bot.getFileInfo("file-1");
+  const fileUrl = await bot.getFileDownloadUrl("file-1");
+  if (
+    !deleted ||
+    !pinned ||
+    !unpinned ||
+    !banned ||
+    !unbanned ||
+    !promoted ||
+    !demoted ||
+    !keyboardSet ||
+    !keyboardDeleted ||
+    uploadedFile?.fileId !== "file-1" ||
+    fileInfo?.filePath !== "/files/1" ||
+    fileUrl !== "https://example.com/files/1"
+  ) {
+    throw new Error("Extended typed API endpoint checks failed");
+  }
+
+  const hookEvents: string[] = [];
+  await bot.sendMessage("chat-1", "hooked", {
+    requestOptions: {
+      timeoutProfile: "short",
+      retryPolicy: {
+        maxAttempts: 2,
+        baseDelayMs: 1,
+        maxDelayMs: 5,
+      },
+      hooks: {
+        beforeRequest: (context) => {
+          hookEvents.push(`before:${context.method}:${context.attempt}`);
+        },
+        afterResponse: (context) => {
+          hookEvents.push(`after:${context.method}:${context.attempt}:${context.responseStatus ?? 0}`);
+        },
+      },
+    },
+  });
+
   if (bot.isPolling()) {
     throw new Error("Bot should not be polling in local API test");
   }
@@ -354,6 +493,36 @@ async function main() {
   pollingBot.onError((_error, context) => {
     pollingErrorKinds.push(`${context.kind}:${context.source}`);
   });
+
+  pollingQueueRequest.enqueue("sendMessage", sendMessageResult);
+  const hookTransport = new HookRequest({
+    sendMessage: sendMessageResult,
+  });
+  const hookBot = new Bot("test-token", {
+    request: hookTransport,
+    pollingRequest: hookTransport,
+    logger: {
+      error: () => {
+        // silence test output
+      },
+    },
+  });
+  await hookBot.sendMessage("chat-1", "hooked", {
+    requestOptions: {
+      timeoutProfile: "short",
+      hooks: {
+        beforeRequest: (context) => {
+          hookEvents.push(`beforePolling:${context.method}:${context.attempt}`);
+        },
+        afterResponse: (context) => {
+          hookEvents.push(`afterPolling:${context.method}:${context.attempt}:${context.responseStatus ?? 0}`);
+        },
+      },
+    },
+  });
+  if (!hookEvents.some((entry) => entry.startsWith("beforePolling")) || !hookEvents.some((entry) => entry.startsWith("afterPolling"))) {
+    throw new Error(`Expected request hooks to run on transport path, got events: ${hookEvents.join("|")}`);
+  }
 
   const pollingTask = pollingBot.startPolling({
     timeoutSeconds: 30,

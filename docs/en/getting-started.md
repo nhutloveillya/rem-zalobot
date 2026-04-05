@@ -46,6 +46,15 @@ ZALO_BOT_LANG=vi
 
 If unset, the current default is `vi`.
 
+## Choose API style
+
+`zalo-bot-js` supports two long-term styles and both share the same command parsing behavior:
+
+- Event API (`bot.on(...)`, `bot.command(...)`) as the primary style for most bots.
+- Handler API (`ApplicationBuilder`, `CommandHandler`, `MessageHandler`) for teams that prefer handler/filter routing.
+
+Because command parsing is shared, `/Start  demo` and `/start demo` are matched the same way in both styles.
+
 ## Verify the token
 
 ```bash

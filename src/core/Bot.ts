@@ -41,6 +41,79 @@ export interface PollingOptions {
   allowedUpdates?: string[];
   onUpdate?: (update: Update) => Promise<void> | void;
   onError?: BotErrorHandler;
+  requestOptions?: RequestOptions;
+}
+
+export interface SendMessageOptions {
+  reply_to_message_id?: string;
+  requestOptions?: RequestOptions;
+}
+
+export interface SendPhotoOptions extends SendMessageOptions {}
+
+export interface SendStickerOptions extends SendMessageOptions {}
+
+export interface SendPhotosOptions extends SendMessageOptions {
+  separator?: string;
+}
+
+export interface EditMessageTextOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface DeleteMessageOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface PinMessageOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface UnpinMessageOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface BanUserOptions {
+  reason?: string;
+  requestOptions?: RequestOptions;
+}
+
+export interface UnbanUserOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface PromoteAdminOptions {
+  role?: string;
+  requestOptions?: RequestOptions;
+}
+
+export interface DemoteAdminOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface SetChatKeyboardOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface DeleteChatKeyboardOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface GetFileInfoOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface GetFileDownloadUrlOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface UploadFileOptions {
+  requestOptions?: RequestOptions;
+}
+
+export interface WebhookOptions {
+  dropPendingUpdates?: boolean;
+  requestOptions?: RequestOptions;
 }
 
 export type BotEvent =
@@ -79,6 +152,13 @@ export type BotErrorHandler = (error: unknown, context: BotErrorContext) => Prom
 
 export interface BotLogger {
   error(message: string, error: unknown, context?: BotErrorContext): void;
+}
+
+export interface FileInfo {
+  fileId: string;
+  filePath?: string;
+  fileSize?: number;
+  raw?: JsonObject;
 }
 
 type EventListener = {
@@ -227,39 +307,65 @@ export class Bot {
   async sendMessage(
     chatId: string,
     text: string,
-    options?: { reply_to_message_id?: string },
+    options?: SendMessageOptions,
   ): Promise<Message> {
     return this.sendMessageLike("sendMessage", {
       chat_id: chatId,
       text,
       reply_to_message_id: options?.reply_to_message_id,
-    });
+    }, options?.requestOptions);
   }
 
   async sendPhoto(
     chatId: string,
     caption: string,
     photo: string,
-    options?: { reply_to_message_id?: string },
+    options?: SendPhotoOptions,
   ): Promise<Message> {
     return this.sendMessageLike("sendPhoto", {
       chat_id: chatId,
       caption,
       photo,
       reply_to_message_id: options?.reply_to_message_id,
-    });
+    }, options?.requestOptions);
   }
 
   async sendSticker(
     chatId: string,
     sticker: string,
-    options?: { reply_to_message_id?: string },
+    options?: SendStickerOptions,
   ): Promise<Message> {
     return this.sendMessageLike("sendSticker", {
       chat_id: chatId,
       sticker,
       reply_to_message_id: options?.reply_to_message_id,
-    });
+    }, options?.requestOptions);
+  }
+
+  async sendPhotos(
+    chatId: string,
+    photos: string[],
+    caption = "",
+    options: SendPhotosOptions = {},
+  ): Promise<Message[]> {
+    const sanitizedPhotos = photos.map((photo) => photo.trim()).filter(Boolean);
+    if (sanitizedPhotos.length === 0) {
+      return [];
+    }
+
+    const separator = options.separator ?? " ";
+    const replies: Message[] = [];
+    for (let index = 0; index < sanitizedPhotos.length; index += 1) {
+      const photo = sanitizedPhotos[index];
+      const label = `[${index + 1}/${sanitizedPhotos.length}]`;
+      const indexedCaption = caption ? `${label}${separator}${caption}` : label;
+      const message = await this.sendPhoto(chatId, indexedCaption, photo, {
+        reply_to_message_id: options.reply_to_message_id,
+        requestOptions: options.requestOptions,
+      });
+      replies.push(message);
+    }
+    return replies;
   }
 
   async sendChatAction(chatId: string, action: string, options?: RequestOptions): Promise<boolean> {
@@ -275,23 +381,206 @@ export class Bot {
     return Boolean(result);
   }
 
-  async setWebhook(url: string, secretToken: string): Promise<boolean> {
+  async setWebhook(url: string, secretToken: string, options?: WebhookOptions): Promise<boolean> {
     const result = await this.post("setWebhook", {
       url,
       secret_token: secretToken,
-    });
+      drop_pending_updates: options?.dropPendingUpdates,
+    }, options?.requestOptions);
 
     return Boolean(result);
   }
 
-  async deleteWebhook(): Promise<boolean> {
-    const result = await this.post("deleteWebhook");
+  async deleteWebhook(options?: WebhookOptions): Promise<boolean> {
+    const result = await this.post("deleteWebhook", {
+      drop_pending_updates: options?.dropPendingUpdates,
+    }, options?.requestOptions);
     return Boolean(result);
   }
 
-  async getWebhookInfo(): Promise<WebhookInfo | undefined> {
-    const result = await this.post("getWebhookInfo");
+  async getWebhookInfo(options?: RequestOptions): Promise<WebhookInfo | undefined> {
+    const result = await this.post("getWebhookInfo", undefined, options);
     return WebhookInfo.fromApi(asJsonObject(result));
+  }
+
+  async editMessageText(
+    chatId: string,
+    messageId: string,
+    text: string,
+    options?: EditMessageTextOptions,
+  ): Promise<Message> {
+    return this.sendMessageLike("editMessageText", {
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+    }, options?.requestOptions);
+  }
+
+  async deleteMessage(
+    chatId: string,
+    messageId: string,
+    options?: DeleteMessageOptions,
+  ): Promise<boolean> {
+    const result = await this.post(
+      "deleteMessage",
+      {
+        chat_id: chatId,
+        message_id: messageId,
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async pinMessage(
+    chatId: string,
+    messageId: string,
+    options?: PinMessageOptions,
+  ): Promise<boolean> {
+    const result = await this.post(
+      "pinMessage",
+      {
+        chat_id: chatId,
+        message_id: messageId,
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async unpinMessage(
+    chatId: string,
+    messageId: string,
+    options?: UnpinMessageOptions,
+  ): Promise<boolean> {
+    const result = await this.post(
+      "unpinMessage",
+      {
+        chat_id: chatId,
+        message_id: messageId,
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async banChatMember(chatId: string, userId: string, options?: BanUserOptions): Promise<boolean> {
+    const result = await this.post(
+      "banChatMember",
+      {
+        chat_id: chatId,
+        user_id: userId,
+        reason: options?.reason,
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async unbanChatMember(chatId: string, userId: string, options?: UnbanUserOptions): Promise<boolean> {
+    const result = await this.post(
+      "unbanChatMember",
+      {
+        chat_id: chatId,
+        user_id: userId,
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async promoteChatAdmin(
+    chatId: string,
+    userId: string,
+    options?: PromoteAdminOptions,
+  ): Promise<boolean> {
+    const result = await this.post(
+      "promoteChatAdmin",
+      {
+        chat_id: chatId,
+        user_id: userId,
+        role: options?.role,
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async demoteChatAdmin(chatId: string, userId: string, options?: DemoteAdminOptions): Promise<boolean> {
+    const result = await this.post(
+      "demoteChatAdmin",
+      {
+        chat_id: chatId,
+        user_id: userId,
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async setChatKeyboard(
+    chatId: string,
+    keyboard: JsonObject,
+    options?: SetChatKeyboardOptions,
+  ): Promise<boolean> {
+    const result = await this.post(
+      "setChatKeyboard",
+      {
+        chat_id: chatId,
+        keyboard: JSON.stringify(keyboard),
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async deleteChatKeyboard(chatId: string, options?: DeleteChatKeyboardOptions): Promise<boolean> {
+    const result = await this.post(
+      "deleteChatKeyboard",
+      {
+        chat_id: chatId,
+      },
+      options?.requestOptions,
+    );
+    return Boolean(result);
+  }
+
+  async uploadFile(fileUrl: string, options?: UploadFileOptions): Promise<FileInfo | undefined> {
+    const result = await this.post(
+      "uploadFile",
+      {
+        file_url: fileUrl,
+      },
+      options?.requestOptions,
+    );
+    return toFileInfo(asJsonObject(result));
+  }
+
+  async getFileInfo(fileId: string, options?: GetFileInfoOptions): Promise<FileInfo | undefined> {
+    const result = await this.post(
+      "getFileInfo",
+      {
+        file_id: fileId,
+      },
+      options?.requestOptions,
+    );
+    return toFileInfo(asJsonObject(result));
+  }
+
+  async getFileDownloadUrl(
+    fileId: string,
+    options?: GetFileDownloadUrlOptions,
+  ): Promise<string | undefined> {
+    const result = await this.post(
+      "getFileDownloadUrl",
+      {
+        file_id: fileId,
+      },
+      options?.requestOptions,
+    );
+    const payload = asJsonObject(result);
+    const candidate = payload?.file_url;
+    return typeof candidate === "string" ? candidate : undefined;
   }
 
   on(event: BotEvent, callback: BotEventCallback): this {
@@ -479,16 +768,25 @@ export class Bot {
     return this.pollingState;
   }
 
-  async setWebHook(url: string, options?: { secret_token?: string }): Promise<boolean> {
-    return this.setWebhook(url, options?.secret_token ?? "");
+  async setWebHook(
+    url: string,
+    options?: { secret_token?: string; drop_pending_updates?: boolean; requestOptions?: RequestOptions },
+  ): Promise<boolean> {
+    return this.setWebhook(url, options?.secret_token ?? "", {
+      dropPendingUpdates: options?.drop_pending_updates,
+      requestOptions: options?.requestOptions,
+    });
   }
 
-  async deleteWebHook(): Promise<boolean> {
-    return this.deleteWebhook();
+  async deleteWebHook(options?: { drop_pending_updates?: boolean; requestOptions?: RequestOptions }): Promise<boolean> {
+    return this.deleteWebhook({
+      dropPendingUpdates: options?.drop_pending_updates,
+      requestOptions: options?.requestOptions,
+    });
   }
 
-  async getWebHookInfo(): Promise<WebhookInfo | undefined> {
-    return this.getWebhookInfo();
+  async getWebHookInfo(options?: RequestOptions): Promise<WebhookInfo | undefined> {
+    return this.getWebhookInfo(options);
   }
 
   get cachedUser(): User | undefined {
@@ -534,7 +832,9 @@ export class Bot {
             offset: this.nextUpdateOffset,
             allowedUpdates: options.allowedUpdates,
           }, {
+            ...options.requestOptions,
             signal: this.pollingAbortController?.signal,
+            timeoutProfile: options.requestOptions?.timeoutProfile ?? "long_poll",
           });
 
           if (updates.length > 0) {
@@ -584,8 +884,12 @@ export class Bot {
     }
   }
 
-  private async sendMessageLike(endpoint: string, data: RequestPayload): Promise<Message> {
-    const result = await this.post(endpoint, data);
+  private async sendMessageLike(
+    endpoint: string,
+    data: RequestPayload,
+    options?: RequestOptions,
+  ): Promise<Message> {
+    const result = await this.post(endpoint, data, options);
     const rawResult = asJsonObject(result);
     const message = Message.fromApi(rawResult, this);
 
@@ -712,4 +1016,22 @@ async function sleepWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function toFileInfo(value: JsonObject | undefined): FileInfo | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const fileId = value.file_id;
+  if (typeof fileId !== "string") {
+    return undefined;
+  }
+
+  return {
+    fileId,
+    filePath: typeof value.file_path === "string" ? value.file_path : undefined,
+    fileSize: typeof value.file_size === "number" ? value.file_size : undefined,
+    raw: value,
+  };
 }
