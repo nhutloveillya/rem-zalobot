@@ -1,7 +1,7 @@
 {
-  "name": "zalo-bot-js",
+  "name": "rem-zalobot",
   "version": "0.1.1",
-  "description": "TypeScript SDK for the Zalo Bot API.",
+  "description": "Zalo Bot cua Nhut",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "exports": {
@@ -32,7 +32,7 @@
     "url": "git+https://github.com/nhutloveillya/rem-zalobot.git"
   },
   "keywords": [],
-  "author": "KaiyoDev",
+  "author": "NhutLoveIllya",
   "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
