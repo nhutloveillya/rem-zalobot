@@ -1,14 +1,15 @@
 import { Bot } from "zalo-bot-js";
 import { config as loadEnv } from "dotenv";
 
-
 async function getDan<T = any>(query: string): Promise<T> {
   const url = `https://danbooru.donmai.us/${query}`;
 
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+    throw new Error(
+      `HTTP error! status: ${response.status} - ${response.statusText}`,
+    );
   }
 
   const data: T = await response.json();
@@ -34,89 +35,115 @@ async function main() {
     console.log("Received message:", message.text ?? message.messageId);
   });
 
-  const danhelp = "cách sử dụng /dan \n /dan <tags> - ảnh ngẫu nhiên theo tag đã gửi\n /dantags <query> - tìm tag theo query\n /dans <tags> - 1 loạt ảnh ngẫu nhiên theo tag";
+  const danhelp = `cách sử dụng /dan
+  \n /dan img <tags> - ảnh ngẫu nhiên theo tag đã gửi
+  \n /dan tags <query> - tìm tag theo query
+  \n /dan imgs <tags> - 1 loạt ảnh ngẫu nhiên theo tag`;
 
-  // Xử lý các lệnh /dan trước
-  bot.onText(/\/dan(?:\s+(.+))?/, async (message, match) => {
-    const payload = match[1]?.trim();
-    if (payload) {
-      try {
-        const res = await getDan(`posts.json?tags=${encodeURIComponent(payload)}`);
-        if (res.length === 0) {
-          await bot.sendMessage(message.chat.id, "Không tìm thấy ảnh nào với tag này.");
-          return;
-        }
-        const danid = getRandomInt(0, res.length - 1);
-        await bot.sendPhoto(
-          message.chat.id,
-          `Nguồn: ${res[danid]?.source}\nScore: ${res[danid]?.score}\nRating: ${res[danid]?.rating}`,
-          res[danid]?.file_url,
-        );
-      } catch (error) {
-        console.error("Error fetching dan:", error);
-        await bot.sendMessage(message.chat.id, "Lỗi khi tải ảnh. Vui lòng thử lại.");
+  bot.command("dan", async (message, context) => {
+    const ctx = context ? context.command.args : undefined;
+    if (ctx && ctx.length > 0) {
+      bot.sendChatAction(message.chat.id, "typing");
+      if (ctx[0] === "help") {
+        await bot.sendMessage(message.chat.id, danhelp);
       }
+      if (ctx[0] === "tags") {
+        try {
+          const res = await getDan(
+            `tags.json?search[name_matches]=${encodeURIComponent(ctx[1])}*`,
+          );
+          if (res.length > 0) {
+            await bot.sendMessage(
+              message.chat.id,
+              `Kết quả tìm kiếm tag cho "${ctx[1]}":\n` +
+                res
+                  .map((tag: any) => `- ${tag.name} (${tag.post_count} posts)`)
+                  .join("\n"),
+            );
+          } else {
+            await bot.sendMessage(
+              message.chat.id,
+              `Không tìm thấy tag nào khớp với "${ctx[1]}".`,
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching tags:", error);
+          await bot.sendMessage(
+            message.chat.id,
+            "Lỗi khi tìm tag. Vui lòng thử lại.",
+          );
+        }
+      }
+      if (ctx[0] === "img") {
+        try {
+          const res = await getDan(
+            `posts.json?tags=${encodeURIComponent(ctx[1])}`,
+          );
+          if (res.length === 0) {
+            await bot.sendMessage(
+              message.chat.id,
+              "Không tìm thấy ảnh nào với tag này.",
+            );
+            return;
+          }
+          const danid = getRandomInt(0, res.length - 1);
+          await bot.sendPhoto(
+            message.chat.id,
+            `Nguồn: ${res[danid]?.source}\nScore: ${res[danid]?.score}\nRating: ${res[danid]?.rating}`,
+            res[danid]?.file_url,
+          );
+        } catch (error) {
+          console.error("Error fetching dan:", error);
+          await bot.sendMessage(
+            message.chat.id,
+            "Lỗi khi tải ảnh. Vui lòng thử lại.",
+          );
+        }
+      }
+      if (ctx[0] === "imgs") {
+        try {
+          const res = await getDan(
+            `posts.json?tags=${encodeURIComponent(ctx[1])}+&page=${getRandomInt(1, 100)}`,
+          );
+          if (res.length === 0) {
+            await bot.sendMessage(
+              message.chat.id,
+              "Không tìm thấy ảnh nào với tag này.",
+            );
+            return;
+          }
+          const danlist = [];
+          for (let i = 0; i < Math.min(5, res.length); i++) {
+            danlist.push({
+              url: res[i]?.file_url,
+            });
+          }
+          await bot.sendPhotos(
+            message.chat.id,
+            danlist.map((d) => d.url),
+            "Loạt ảnh theo tag bạn đã tìm kiếm",
+          );
+        } catch (error) {
+          console.error("Error fetching dans:", error);
+          await bot.sendMessage(
+            message.chat.id,
+            "Lỗi khi tải ảnh. Vui lòng thử lại.",
+          );
+        }
+      }
+    } else {
+      await bot.sendMessage(message.chat.id, danhelp);
     }
     return; // QUAN TRỌNG: Dừng xử lý ở đây
-  });
-
-  bot.onText(/\/dans(?:\s+(.+))?/, async (message, match) => {
-    const payload = match[1]?.trim();
-    if (payload) {
-      try {
-        const res = await getDan(`posts.json?tags=${encodeURIComponent(payload)}+&page=${getRandomInt(1, 100)}`);
-        if (res.length === 0) {
-          await bot.sendMessage(message.chat.id, "Không tìm thấy ảnh nào với tag này.");
-          return;
-        }
-        const danlist = [];
-        for (let i = 0; i < Math.min(5, res.length); i++) {
-          const danid = getRandomInt(0, res.length - 1);
-          danlist.push({
-            url: res[danid]?.file_url,
-          });
-        }
-        await bot.sendPhotos(
-          message.chat.id,
-          danlist.map(d => d.url),
-          "Loạt ảnh theo tag bạn đã tìm kiếm",
-        );
-      } catch (error) {
-        console.error("Error fetching dans:", error);
-        await bot.sendMessage(message.chat.id, "Lỗi khi tải ảnh. Vui lòng thử lại.");
-      }
-    }
-    return; // QUAN TRỌNG
-  });
-
-  bot.onText(/\/dantags(?:\s+(.+))?/, async (message, match) => {
-    const payload = match[1]?.trim();
-    if (payload) {
-      try {
-        const res = await getDan(`tags.json?search[name_matches]=${encodeURIComponent(payload)}*`);
-        if (res.length > 0) {
-          await bot.sendMessage(message.chat.id, `Kết quả tìm kiếm tag cho "${payload}":\n` + res.map((tag: any) => `- ${tag.name} (${tag.post_count} posts)`).join("\n"));
-        } else {
-          await bot.sendMessage(message.chat.id, `Không tìm thấy tag nào khớp với "${payload}".`);
-        }
-      } catch (error) {
-        console.error("Error fetching tags:", error);
-        await bot.sendMessage(message.chat.id, "Lỗi khi tìm tag. Vui lòng thử lại.");
-      }
-    }
-    return; // QUAN TRỌNG
-  });
-
-  bot.command("danhelp", async (message) => {
-    await bot.sendMessage(message.chat.id, danhelp);
-    return; // QUAN TRỌNG
   });
 
   bot.onText(/\/start(?:\s+(.+))?/, async (message, match) => {
     const payload = match[1]?.trim();
     await bot.sendMessage(
       message.chat.id,
-      payload ? `Chao ${payload}! Toi la bot Zalo viet bang TypeScript.` : "Chao ban!",
+      payload
+        ? `Chao ${payload}! Toi la bot Zalo viet bang TypeScript.`
+        : "Chao ban!",
     );
     return; // QUAN TRỌNG
   });
@@ -142,9 +169,22 @@ async function main() {
         "https://wallpaperaccess.com/full/8405960.jpg",
         "https://wallpaperaccess.com/full/8405967.jpg",
         "https://wallpaperaccess.com/full/8405978.jpg",
-        "https://wallpaperaccess.com/full/8405979.png"
+        "https://wallpaperaccess.com/full/8405979.png",
       ],
       "Demo gửi nhiều ảnh cùng caption từ SDK",
+    );
+    return; // QUAN TRỌNG
+  });
+
+  bot.command("test", async (message, context) => {
+    await bot.sendMessage(
+      message.chat.id,
+      context
+        ? `Đây là một tin nhắn test. ${context}`
+        : "Đây là một tin nhắn test.",
+    );
+    console.log(
+      `Context Command: ${context.command ? JSON.stringify(context.command) : "No command context"}`,
     );
     return; // QUAN TRỌNG
   });
@@ -157,7 +197,10 @@ async function main() {
     }
 
     if (message.text === "hello") {
-      await bot.sendMessage(message.chat.id, "Xin chao! Toi da nhan duoc loi chao cua ban.");
+      await bot.sendMessage(
+        message.chat.id,
+        "Xin chao! Toi da nhan duoc loi chao cua ban.",
+      );
       return;
     }
 
