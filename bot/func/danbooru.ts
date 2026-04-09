@@ -22,105 +22,112 @@ function getRandomInt(min: number, max: number): number {
 }
 
 export const main = (bot: Bot): void => {
-    const danhelp = `cách sử dụng /dan
+  const danhelp = `cách sử dụng lệnh /dan
     \n /dan img <tags> - ảnh ngẫu nhiên theo tag đã gửi
     \n /dan tags <query> - tìm tag theo query
     \n /dan imgs <tags> - 1 loạt ảnh ngẫu nhiên theo tag`;
 
-    bot.command("dan", async (message, context) => {
+  bot.command("dan", async (message, context) => {
     const ctx = context ? context.command.args : undefined;
+    const ctxraw: any = context ? context.command.argsRaw : undefined;
     if (ctx && ctx.length > 0) {
+      const comcxt = ctxraw?.split(ctx[0])[1]?.trim();
+      if (ctx[0] === "help") {
         bot.sendChatAction(message.chat.id, "typing");
-        if (ctx[0] === "help") {
         await bot.sendMessage(message.chat.id, danhelp);
-        }
-        if (ctx[0] === "tags") {
+      } else if (ctx[0] === "tags") {
+        bot.sendChatAction(message.chat.id, "typing");
         try {
-            const res = await getDan(
-            `tags.json?search[name_matches]=${encodeURIComponent(ctx[1])}*`,
-            );
-            if (res.length > 0) {
+          const res = await getDan(
+            `tags.json?search[name_matches]=${encodeURIComponent(comcxt)}`,
+          );
+          if (res.length > 0) {
             await bot.sendMessage(
-                message.chat.id,
-                `Kết quả tìm kiếm tag cho "${ctx[1]}":\n` +
+              message.chat.id,
+              `Kết quả tìm kiếm tag cho "${comcxt}":\n` +
                 res
-                    .map((tag: any) => `- ${tag.name} (${tag.post_count} posts)`)
-                    .join("\n"),
+                  .map((tag: any) => `- ${tag.name} (${tag.post_count} posts)`)
+                  .join("\n"),
             );
-            } else {
+          } else {
             await bot.sendMessage(
-                message.chat.id,
-                `Không tìm thấy tag nào khớp với "${ctx[1]}".`,
+              message.chat.id,
+              `Không tìm thấy tag nào khớp với "${comcxt}".`,
             );
-            }
+          }
         } catch (error) {
-            console.error("Error fetching tags:", error);
-            await bot.sendMessage(
+          console.error("Error fetching tags:", error);
+          await bot.sendMessage(
             message.chat.id,
             "Lỗi khi tìm tag. Vui lòng thử lại.",
-            );
+          );
         }
-        }
-        if (ctx[0] === "img") {
+      } else if (ctx[0] === "img") {
+        bot.sendChatAction(message.chat.id, "typing");
         try {
-            const res = await getDan(
-            `posts.json?tags=${encodeURIComponent(ctx[1])}`,
-            );
-            if (res.length === 0) {
+          const res = await getDan(
+            `posts.json?tags=${encodeURIComponent(comcxt.replaceAll(" ", "_"))}`,
+          );
+          if (res.length === 0) {
             await bot.sendMessage(
-                message.chat.id,
-                "Không tìm thấy ảnh nào với tag này.",
+              message.chat.id,
+              "Không tìm thấy ảnh nào với tag này.",
             );
             return;
-            }
-            const danid = getRandomInt(0, res.length - 1);
-            await bot.sendPhoto(
+          }
+          const danid = getRandomInt(0, res.length - 1);
+          await bot.sendPhoto(
             message.chat.id,
             `Nguồn: ${res[danid]?.source}\nScore: ${res[danid]?.score}\nRating: ${res[danid]?.rating}`,
             res[danid]?.file_url,
-            );
+          );
         } catch (error) {
-            console.error("Error fetching dan:", error);
-            await bot.sendMessage(
+          console.error("Error fetching dan:", error);
+          await bot.sendMessage(
             message.chat.id,
             "Lỗi khi tải ảnh. Vui lòng thử lại.",
-            );
+          );
         }
-        }
-        if (ctx[0] === "imgs") {
+      } else if (ctx[0] === "imgs") {
+        bot.sendChatAction(message.chat.id, "typing");
         try {
-            const res = await getDan(
-            `posts.json?tags=${encodeURIComponent(ctx[1])}+&page=${getRandomInt(1, 100)}`,
-            );
-            if (res.length === 0) {
+          const res = await getDan(
+            `posts.json?tags=${encodeURIComponent(comcxt.replaceAll(" ", "_"))}+&page=${getRandomInt(1, 50)}`,
+          );
+          if (res.length === 0) {
             await bot.sendMessage(
-                message.chat.id,
-                "Không tìm thấy ảnh nào với tag này.",
+              message.chat.id,
+              "Không tìm thấy ảnh nào với tag này.",
             );
             return;
-            }
-            const danlist = [];
-            for (let i = 0; i < Math.min(5, res.length); i++) {
+          }
+          const danlist = [];
+          for (let i = 0; i < Math.min(5, res.length); i++) {
             danlist.push({
-                url: res[i]?.file_url,
+              url: res[i]?.file_url,
             });
-            }
-            await bot.sendPhotos(
+          }
+          await bot.sendPhotos(
             message.chat.id,
             danlist.map((d) => d.url),
             "Loạt ảnh theo tag bạn đã tìm kiếm",
-            );
+          );
         } catch (error) {
-            console.error("Error fetching dans:", error);
-            await bot.sendMessage(
+          console.error("Error fetching dans:", error);
+          await bot.sendMessage(
             message.chat.id,
             "Lỗi khi tải ảnh. Vui lòng thử lại.",
-            );
+          );
         }
-        }
+      } else {
+        await message.replyText(
+          "Không có lệnh nào như vậy cả.\nHãy dùng /dan help để biết thêm chi tiết",
+        );
+        return; // QUAN TRỌNG: Dừng xử lý ở đây
+      }
     } else {
-        await bot.sendMessage(message.chat.id, danhelp);
+      await bot.sendMessage(message.chat.id, danhelp);
+      return; // QUAN TRỌNG: Dừng xử lý ở đây
     }
-    return; // QUAN TRỌNG: Dừng xử lý ở đây
-    });
+  });
 };
