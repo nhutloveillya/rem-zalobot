@@ -43,6 +43,8 @@
   "dependencies": {
     "dotenv": "^17.4.0",
     "gelbooru-api": "^1.0.1",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "sqlite3": "^6.0.1",
+    "zalo-bot-js": "^0.2.1"
   }
 }

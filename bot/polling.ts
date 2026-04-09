@@ -1,4 +1,4 @@
-import { Bot } from "../src";
+import { Bot } from "zalo-bot-js";
 import { config as loadEnv } from "dotenv";
 
 
