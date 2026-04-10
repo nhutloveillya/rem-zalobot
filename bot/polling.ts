@@ -1,6 +1,7 @@
 import { Bot } from "zalo-bot-js";
 import { config as loadEnv } from "dotenv";
 import { main as danbooruMain } from "./func/danbooru";
+import { main as nyaa } from "./func/nyaa";
 
 async function main() {
   loadEnv();
@@ -11,6 +12,7 @@ async function main() {
 
   const bot = new Bot({ token });
   danbooruMain(bot);
+  nyaa(bot);
 
   bot.on("message", async (message) => {
     console.log("Received message:", message.text ?? message.messageId);

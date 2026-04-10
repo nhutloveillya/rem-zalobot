@@ -23,19 +23,19 @@ function getRandomInt(min: number, max: number): number {
 
 export const main = (bot: Bot): void => {
   const danhelp = `cách sử dụng lệnh /dan
-    \n /dan img <tags> - ảnh ngẫu nhiên theo tag đã gửi
-    \n /dan tags <query> - tìm tag theo query
-    \n /dan imgs <tags> - 1 loạt ảnh ngẫu nhiên theo tag`;
+    /dan img <tags> - ảnh ngẫu nhiên theo tag đã gửi
+    /dan tags <query> - tìm tag theo query
+    /dan imgs <tags> - 1 loạt ảnh ngẫu nhiên theo tag`;
 
   bot.command("dan", async (message, context) => {
-    const ctx = context ? context.command.args : undefined;
-    const ctxraw: any = context ? context.command.argsRaw : undefined;
-    if (ctx && ctx.length > 0) {
-      const comcxt = ctxraw?.split(ctx[0])[1]?.trim();
-      if (ctx[0] === "help") {
-        bot.sendChatAction(message.chat.id, "typing");
+    const ctx = context ? context.command.args : undefined; //lay context: du lieu sau lenh duoi dang array
+    const ctxraw: any = context ? context.command.argsRaw : undefined;//Lay context duoi dang string
+    if (ctx && ctx.length > 0) { //kiem tra xem co contextn hay ko
+      const comcxt = ctxraw?.split(ctx[0])[1]?.trim();//lay context sau subcommand
+      if (ctx[0] === "help") {//lenh help
         await bot.sendMessage(message.chat.id, danhelp);
-      } else if (ctx[0] === "tags") {
+      } 
+      else if (ctx[0] === "tags") {//tim tag
         bot.sendChatAction(message.chat.id, "typing");
         try {
           const res = await getDan(
@@ -62,7 +62,8 @@ export const main = (bot: Bot): void => {
             "Lỗi khi tìm tag. Vui lòng thử lại.",
           );
         }
-      } else if (ctx[0] === "img") {
+      }
+      else if (ctx[0] === "img") {//tim anh
         bot.sendChatAction(message.chat.id, "typing");
         try {
           const res = await getDan(
@@ -88,7 +89,8 @@ export const main = (bot: Bot): void => {
             "Lỗi khi tải ảnh. Vui lòng thử lại.",
           );
         }
-      } else if (ctx[0] === "imgs") {
+      }
+      else if (ctx[0] === "imgs") {//tim anh so luong lon
         bot.sendChatAction(message.chat.id, "typing");
         try {
           const res = await getDan(
@@ -119,14 +121,15 @@ export const main = (bot: Bot): void => {
             "Lỗi khi tải ảnh. Vui lòng thử lại.",
           );
         }
-      } else {
-        await message.replyText(
+      }
+      else {
+        await message.replyText(//khi chay sai subcommand
           "Không có lệnh nào như vậy cả.\nHãy dùng /dan help để biết thêm chi tiết",
         );
         return; // QUAN TRỌNG: Dừng xử lý ở đây
       }
     } else {
-      await bot.sendMessage(message.chat.id, danhelp);
+      await bot.sendMessage(message.chat.id, danhelp);//hien danhelp
       return; // QUAN TRỌNG: Dừng xử lý ở đây
     }
   });
