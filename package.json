@@ -40,9 +40,9 @@
     "typescript": "^6.0.2"
   },
   "dependencies": {
+    "better-sqlite3": "^12.8.0",
     "dotenv": "^17.4.0",
     "sharp": "^0.34.5",
-    "sqlite3": "6.0.1",
-    "zalo-bot-js": "0.2.1"
+    "zalo-bot-js": "^0.2.1"
   }
 }
