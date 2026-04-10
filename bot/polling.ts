@@ -37,7 +37,14 @@ async function main() {
   bot.onText(/\/help/, async (message) => {
     await bot.sendMessage(
       message.chat.id,
-      "Thu lenh nay:\n/start\n/ping\n/help\n/danhelp\nHoac gui hello de test text handler.",
+      `Thu lenh nay:
+      /start
+      /ping
+      /help
+      /dan
+      /nyaa
+      /test
+      Hoac gui hello de test text handler.`,
     );
     return; // QUAN TRỌNG
   });
