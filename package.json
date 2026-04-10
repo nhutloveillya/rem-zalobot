@@ -23,7 +23,7 @@
     "test:event-debug": "node ./node_modules/zalo-bot-js/dist/test/event-debug.js",
     "test:hello-bot": "node ./node_modules/zalo-bot-js/dist/test/hello-bot.js",
     "test:token": "node ./node_modules/zalo-bot-js/dist/test/check-token.js",
-    "polling": "npm run build && node ./dist/bot/polling.js",
+    "bot": "npm run build && node ./dist/src/index.js",
     "smoke": "node -e \"const sdk=require('./node_modules/zalo-bot-js/dist/src/index.js'); const bot=new sdk.Bot({token:'test-token',request:{initialize:async()=>{},shutdown:async()=>{},post:async()=>({id:'1'})},pollingRequest:{initialize:async()=>{},shutdown:async()=>{},post:async()=>[]}}); if(!sdk.Bot||!sdk.ApplicationBuilder||!sdk.filters){throw new Error('SDK exports are incomplete');} if(typeof bot.on!=='function'||typeof bot.onText!=='function'||typeof bot.startPolling!=='function'||typeof bot.processUpdate!=='function'||typeof bot.setWebHook!=='function'){throw new Error('Node-style bot API is incomplete');} console.log('smoke ok');\"",
     "test": "npm run check && npm run build && npm run smoke && npm run test:bot-api"
   },
@@ -43,6 +43,6 @@
     "dotenv": "^17.4.0",
     "sharp": "^0.34.5",
     "sqlite3": "^6.0.1",
-    "zalo-bot-js": "^0.2.1"
+    "zalo-bot-js": "0.2.1"
   }
 }
