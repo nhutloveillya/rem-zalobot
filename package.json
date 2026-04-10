@@ -36,13 +36,11 @@
   "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
-    "@types/node": "^25.5.2",
-    "typescript": "^6.0.2",
-    "vitepress": "^2.0.0-alpha.12"
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.2"
   },
   "dependencies": {
     "dotenv": "^17.4.0",
-    "gelbooru-api": "^1.0.1",
     "sharp": "^0.34.5",
     "sqlite3": "^6.0.1",
     "zalo-bot-js": "^0.2.1"
