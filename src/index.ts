@@ -1,4 +1,4 @@
-import { Bot } from "zalo-bot-js";
+import { Bot } from "../zalobotjs";
 import { config as loadEnv } from "dotenv";
 import { main as danbooruMain } from "./func/danbooru";
 import { main as nyaa } from "./func/nyaa";
