@@ -24,23 +24,24 @@
 
 ## Cách cài và chạy Rem trên thiết bị của bạn
 
-
-#### Bước 1: Clone repo này
+### Bước 1: Clone repo này
 
 ```bash
 git clone https://github.com/nhutloveillya/rem-zalobot.git
 ```
 
-#### Bước 2: Cài đặt các dependencie package
+### Bước 2: Cài đặt các dependencie package
 
-```
+```bash
 cd rem-zalobot
 npm i
 ```
-#### Bước 3: Thêm environment
-##### Mẫu .env:
 
-```
+### Bước 3: Thêm environment
+
+#### Mẫu .env
+
+```text
 ZALO_BOT_TOKEN=your_zalo_bot_token_here
 ZALO_BOT_LANG=vi
 ZALO_BOT_ADMIN_ID=your_zalo_account_id_here
@@ -51,10 +52,9 @@ Bạn có thể tìm hiểu cách lấy Bot TOKEN tại [Trang tài liệu chín
 
 #### Bước 4: Chạy Rem
 
-```
+```bash
 npm run bot
 ```
-
 
 ## License
 
