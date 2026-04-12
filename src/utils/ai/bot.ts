@@ -7,7 +7,7 @@ dotenv.config();
 
 const geminiService = new GeminiService({
   apiKey: process.env.GEMINI_API_KEY!,
-  model: 'gemini-3.1-flash-lite-preview',
+  model: "gemini-3.1-flash-lite-preview",
   personality: BOT_PERSONALITY,
   enableCache: true,
   enableRateLimit: true

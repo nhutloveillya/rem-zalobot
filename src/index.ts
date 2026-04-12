@@ -8,6 +8,7 @@ import {
   resetConversation,
 } from "./utils/ai/bot";
 import { main as aicommand } from "./utils/command/gemini";
+import { messages } from "./utils/zalobotjs/i18n/messages";
 
 async function main() {
   loadEnv();
@@ -33,7 +34,7 @@ async function main() {
     await bot.sendMessage(
       message.chat.id,
       payload
-        ? `Chao ${payload}! Toi la bot Zalo viet bang TypeScript.`
+        ? `Xin Chào Chủ Nhân ${payload}`
         : "Chao ban!",
     );
     return; // QUAN TRỌNG
@@ -99,6 +100,9 @@ hello - chào bạn
     );
     return; // QUAN TRỌNG
   });
+  bot.command("id", async(message) => {
+    message.replyText(`Id của bạn là: ${message.fromUser?.id}`)
+  });
 
   // Handler chung cho text PHẢI Ở CUỐI và kiểm tra lệnh
   bot.on("text", async (message) => {
@@ -111,10 +115,10 @@ hello - chào bạn
       return;
     }
 
-    if (message.text === "hello") {
+    if (message.text === "hi") {
       await bot.sendMessage(
         message.chat.id,
-        `Xin chao! Toi da nhan duoc loi chao cua ban.`,
+        `Xin chào Chủ Nhân~!`,
       );
       console.log(message.fromUser?.id);
       return;
