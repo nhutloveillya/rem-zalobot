@@ -1,4 +1,4 @@
-import { Bot } from "../../zalobotjs";
+import { Bot } from "../zalobotjs";
 
 async function getDan<T = any>(query: string): Promise<T> {
   const url = `https://danbooru.donmai.us/${query}`;

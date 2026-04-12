@@ -1,7 +1,7 @@
-import { Bot } from "../zalobotjs";
+import { Bot } from "./utils/zalobotjs";
 import { config as loadEnv } from "dotenv";
-import { main as danbooruMain } from "./func/danbooru";
-import { main as nyaa } from "./func/nyaa";
+import { main as danbooruMain } from "./utils/command/danbooru";
+import { main as nyaa } from "./utils/command/nyaa";
 
 async function main() {
   loadEnv();

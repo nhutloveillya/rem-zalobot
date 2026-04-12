@@ -1,6 +1,6 @@
 import { config as loadEnv } from "dotenv";
-import { Bot } from "../zalobotjs";
-import { t } from "../zalobotjs/i18n/runtime";
+import { Bot } from "../src/utils/zalobotjs";
+import { t } from "../src/utils/zalobotjs/i18n/runtime";
 
 async function main() {
   loadEnv();

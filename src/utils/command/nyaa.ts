@@ -1,4 +1,4 @@
-import { Bot, Message } from "../../zalobotjs";
+import { Bot, Message } from "../zalobotjs";
 
 async function getNyaa<T = any>(query: string): Promise<T> {
   const url = `https://nyaaapi.onrender.com/${query}`;

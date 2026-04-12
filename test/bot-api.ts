@@ -1,7 +1,7 @@
-import { Bot, ZaloBot, type EventMetadata, type Message } from "../zalobotjs";
-import type { JsonObject, RequestOptions } from "../zalobotjs/types";
-import { BaseRequest, type RequestPayload } from "../zalobotjs/request/BaseRequest";
-import { InvalidToken } from "../zalobotjs/errors";
+import { Bot, ZaloBot, type EventMetadata, type Message } from "../src/utils/zalobotjs";
+import type { JsonObject, RequestOptions } from "../src/utils/zalobotjs/types";
+import { BaseRequest, type RequestPayload } from "../src/utils/zalobotjs/request/BaseRequest";
+import { InvalidToken } from "../src/utils/zalobotjs/errors";
 
 class MockRequest extends BaseRequest {
   readonly readTimeout = 0;
