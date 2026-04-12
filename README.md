@@ -14,13 +14,15 @@
 - [x] Chào người dùng (Hello)
 - [x] Có thể gửi ảnh từ [Danbooru](https://danbooru.donmai.us/)
 - [x] Có thể tìm kiếm torrent từ [nyaa](https://nyaa.land)
-- [ ] Chúc bạn ngủ ngon
+- [x] Chúc bạn ngủ ngon
+- [x] Nói chuyện với bạn như hầu gái
+- [x] Nói chuyện với bạn như bạn gái
 - [ ] Ngủ với bạn
 
 > **_Trong tương lai Rem có thể_** (todo)
 >
-> - Trò chuyện như bạn gái
-> - Liên kết với n8n
+> - Liên kết với openclaw
+> - Ngủ với bạn
 
 ## Cách cài và chạy Rem trên thiết bị của bạn
 

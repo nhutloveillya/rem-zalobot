@@ -1076,7 +1076,7 @@ export class Bot {
     }
   }
 
-  private async tryHandleWhoAmI(message: Message): Promise<void> {
+   private async tryHandleWhoAmI(message: Message): Promise<void> {
     const text = message.text?.trim().toLowerCase();
     if (text !== "/id") {
       return;

@@ -2,17 +2,24 @@ import { Bot } from "./utils/zalobotjs";
 import { config as loadEnv } from "dotenv";
 import { main as danbooruMain } from "./utils/command/danbooru";
 import { main as nyaa } from "./utils/command/nyaa";
+import { clearAllCache, handleMessage, resetConversation } from "./utils/ai/bot";
+import { main as aicommand } from "./utils/command/gemini"
 
 async function main() {
   loadEnv();
+
   const token = process.env.ZALO_BOT_TOKEN;
   if (!token) {
     throw new Error("Missing ZALO_BOT_TOKEN");
   }
-
+  //tạo bot
   const bot = new Bot({ token });
+
+  //cách lệnh bổ sung
   danbooruMain(bot);
   nyaa(bot);
+  aicommand(bot);
+
 
   bot.on("message", async (message) => {
     console.log("Received message:", message.text ?? message.messageId);
@@ -25,6 +32,20 @@ async function main() {
       payload
         ? `Chao ${payload}! Toi la bot Zalo viet bang TypeScript.`
         : "Chao ban!",
+    );
+    return; // QUAN TRỌNG
+  });
+
+  bot.onText(/\@ai(?:\s+(.+))?/, async (message, match) => {
+    bot.sendChatAction(message.chat.id,"typing");
+    const payload = match[1]?.trim();
+    const userid : any = message.fromUser?.id;
+    const reply = await handleMessage(userid,payload)
+    await bot.sendMessage(
+      message.chat.id,
+      payload
+        ? reply
+        : "Xin Chào Chủ Nhân!",
     );
     return; // QUAN TRỌNG
   });
@@ -78,27 +99,34 @@ async function main() {
   });
 
   // Handler chung cho text PHẢI Ở CUỐI và kiểm tra lệnh
-  bot.on("text", async (message) => {
+  bot.on("text", async (message,metadata) => {
     // Bỏ qua nếu là lệnh (bắt đầu với /)
     if (message.text?.startsWith("/")) {
+      return;
+    }
+
+    if (message.text?.startsWith("@")) {
       return;
     }
 
     if (message.text === "hello") {
       await bot.sendMessage(
         message.chat.id,
-        "Xin chao! Toi da nhan duoc loi chao cua ban.",
+        `Xin chao! Toi da nhan duoc loi chao cua ban.`,
       );
+      console.log(message.fromUser?.id);
       return;
     }
 
     // Echo tin nhắn thường
     if (message.text) {
       await bot.sendMessage(message.chat.id, `Ban vua noi: ${message.text}`);
+      return;
     }
   });
 
   await bot.startPolling();
 }
-
+resetConversation;
+clearAllCache;
 void main();
