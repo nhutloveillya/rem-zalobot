@@ -10,7 +10,7 @@
 
 **_Những hiện tại Rem có thể và không thể:_**
 
-- [x] Phản ứng khi nhắn tin (trả lời lại những gì người dùng nhắn)
+- [x] Trò chuyện với bạn
 - [x] Chào người dùng (Hello)
 - [x] Có thể gửi ảnh từ [Danbooru](https://danbooru.donmai.us/)
 - [x] Có thể tìm kiếm torrent từ [nyaa](https://nyaa.land)
