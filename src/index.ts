@@ -53,6 +53,7 @@ async function main() {
 /hi <yourname> Rem sẽ chào bạn
 /ping - pong
 /photos - gửi ảnh, ảnh gì thì thử rồi biết
+/id - gửi bạn id của mình
 hello - chào bạn
 
 #Danbooru
