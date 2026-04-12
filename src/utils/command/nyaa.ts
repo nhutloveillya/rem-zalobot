@@ -19,9 +19,7 @@ export const main = (bot: Bot): void => {
     const nyaahelp =
     `Cách sử dụng /nyaa - dùng để tra torrent trên nyaa.si hoặc nyaa.land
     - /nyaa search <query> tìm torrent theo tên
-    - /nyaa sukebei <query> tìm torrent trên sukebei (18+)
-    - /nyaa sbc <query> tìm torrent theo tên và thể loại, ngăn cách giữa thể loại và tên là dấu , (dấu phẩy)
-    ... đang cập nhật thêm`
+    - /nyaa sukebei <query> tìm torrent trên sukebei (18+)`
 
     bot.command('nyaa',async(message, context) => {
     const ctx = context ? context.command.args : undefined; //lay context: du lieu sau lenh duoi dang array

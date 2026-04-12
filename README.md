@@ -52,10 +52,44 @@ ZALO_BOT_ADMIN_ID=your_zalo_account_id_here
 `ZALO_BOT_LANG` hiện hỗ trợ `vi` and `en`.
 Bạn có thể tìm hiểu cách lấy Bot TOKEN tại [Trang tài liệu chính thức về Zalo Bot](https://bot.zapps.me/docs/create-bot/)
 
-#### Bước 4: Chạy Rem
+### Bước 4: Chạy Rem
 
 ```bash
 npm run bot
+```
+
+## Cách dùng Rem 🥵🥵
+
+### Trò chuyện với Rem
+
+Cứ nói chuyện bình thường, Rem sẽ trả lời bạn.
+Nhưng số lượt để bạn trò chuyện với cô ấy tùy thuộc vào API Key của bạn, idk.
+Nếu bạn không có gemini api key hay api key bạn quá cùi mà lại muốn dùng model llm khác thì [xem thêm...](./nani.md)
+
+### Cách lệnh cơ bản tác động lên Rem
+
+```bash
+#Các lệnh cơ bản
+/help - liệt kê danh sách các lệnh bạn nên biết
+/hi <yourname> Rem sẽ chào bạn
+/ping - pong
+/photos - gửi ảnh, ảnh gì thì thử rồi biết
+hello - chào bạn
+
+#Danbooru
+/dan help - hướng dẫn sử dụng lệnh /dan
+/dan img <tags> - ảnh ngẫu nhiên theo tag đã gửi
+/dan tags <query> - tìm tag theo query
+/dan imgs <tags> - 1 loạt ảnh ngẫu nhiên theo tag\
+
+#Nyaa
+/nyaa search <query> tìm torrent theo tên
+/nyaa sukebei <query> tìm torrent trên sukebei (18+)
+
+#AI
+/ai clean - dọn cache
+/ai reset - xóa lịch sử trò chuyện
+/ai status - trạng thái cache của ai
 ```
 
 ## License

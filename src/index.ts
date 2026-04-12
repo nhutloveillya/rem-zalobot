@@ -2,8 +2,12 @@ import { Bot } from "./utils/zalobotjs";
 import { config as loadEnv } from "dotenv";
 import { main as danbooruMain } from "./utils/command/danbooru";
 import { main as nyaa } from "./utils/command/nyaa";
-import { clearAllCache, handleMessage, resetConversation } from "./utils/ai/bot";
-import { main as aicommand } from "./utils/command/gemini"
+import {
+  clearAllCache,
+  handleMessage,
+  resetConversation,
+} from "./utils/ai/bot";
+import { main as aicommand } from "./utils/command/gemini";
 
 async function main() {
   loadEnv();
@@ -20,32 +24,17 @@ async function main() {
   nyaa(bot);
   aicommand(bot);
 
-
   bot.on("message", async (message) => {
     console.log("Received message:", message.text ?? message.messageId);
   });
 
-  bot.onText(/\/start(?:\s+(.+))?/, async (message, match) => {
+  bot.onText(/\/hi(?:\s+(.+))?/, async (message, match) => {
     const payload = match[1]?.trim();
     await bot.sendMessage(
       message.chat.id,
       payload
         ? `Chao ${payload}! Toi la bot Zalo viet bang TypeScript.`
         : "Chao ban!",
-    );
-    return; // QUAN TRỌNG
-  });
-
-  bot.onText(/\@ai(?:\s+(.+))?/, async (message, match) => {
-    bot.sendChatAction(message.chat.id,"typing");
-    const payload = match[1]?.trim();
-    const userid : any = message.fromUser?.id;
-    const reply = await handleMessage(userid,payload)
-    await bot.sendMessage(
-      message.chat.id,
-      payload
-        ? reply
-        : "Xin Chào Chủ Nhân!",
     );
     return; // QUAN TRỌNG
   });
@@ -58,14 +47,27 @@ async function main() {
   bot.onText(/\/help/, async (message) => {
     await bot.sendMessage(
       message.chat.id,
-      `Thu lenh nay:
-      /start
-      /ping
-      /help
-      /dan
-      /nyaa
-      /test
-      Hoac gui hello de test text handler.`,
+      `#Các lệnh cơ bản
+/help - liệt kê danh sách các lệnh bạn nên biết
+/hi <yourname> Rem sẽ chào bạn
+/ping - pong
+/photos - gửi ảnh, ảnh gì thì thử rồi biết
+hello - chào bạn
+
+#Danbooru
+/dan help - hướng dẫn sử dụng lệnh /dan
+/dan img <tags> - ảnh ngẫu nhiên theo tag đã gửi
+/dan tags <query> - tìm tag theo query
+/dan imgs <tags> - 1 loạt ảnh ngẫu nhiên theo tag\
+
+#Nyaa
+/nyaa search <query> tìm torrent theo tên
+/nyaa sukebei <query> tìm torrent trên sukebei (18+)
+
+#AI
+/ai clean - dọn cache
+/ai reset - xóa lịch sử trò chuyện
+/ai status - trạng thái cache của ai`,
     );
     return; // QUAN TRỌNG
   });
@@ -99,7 +101,7 @@ async function main() {
   });
 
   // Handler chung cho text PHẢI Ở CUỐI và kiểm tra lệnh
-  bot.on("text", async (message,metadata) => {
+  bot.on("text", async (message) => {
     // Bỏ qua nếu là lệnh (bắt đầu với /)
     if (message.text?.startsWith("/")) {
       return;
@@ -120,7 +122,10 @@ async function main() {
 
     // Echo tin nhắn thường
     if (message.text) {
-      await bot.sendMessage(message.chat.id, `Ban vua noi: ${message.text}`);
+      message.replyAction("typing");
+      const userid: any = message.fromUser?.id;
+      const reply = await handleMessage(userid, message.text);
+      await bot.sendMessage(message.chat.id, reply);
       return;
     }
   });
